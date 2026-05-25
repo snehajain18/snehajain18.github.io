@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Portfolio Editor — Sneha Jain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ─── RESET ─────────────────────────────────────────────── */
+:root{
+  --navy:#0B1F3A;--navy2:#1a3558;--teal:#0D9B8A;--teal-l:#E0F5F2;--teal-m:#5ECFBF;
+  --amber:#F5A623;--amber-l:#FEF5E7;--slate:#4A5568;--slate-l:#F7F8FA;
+  --white:#fff;--border:#E2E8F0;--text:#1A202C;--muted:#718096;
+  --display:'DM Serif Display',serif;--body:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--text);background:var(--white);line-height:1.7;overflow-x:hidden}
+
+/* ─── EDITOR CHROME ──────────────────────────────────────── */
+#editor-bar {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 9999;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+#edit-toggle {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--navy);
+  color: #fff;
+  border: none; cursor: pointer;
+  padding: 10px 18px;
+  border-radius: 100px;
+  font-family: var(--body);
+  font-size: .82rem; font-weight: 500;
+  box-shadow: 0 4px 20px rgba(11,31,58,.35);
+  transition: all .2s;
+}
+#edit-toggle:hover { background: var(--navy2); }
+#edit-toggle.active { background: var(--teal); }
+.et-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.35); transition: background .2s; }
+#edit-toggle.active .et-dot { background: #fff; animation: blink 1.2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Editable highlight state */
+body.edit-mode [data-edit] {
+  outline: 2px dashed rgba(13,155,138,.5);
+  outline-offset: 3px;
+  border-radius: 4px;
+  cursor: text;
+  transition: outline .15s;
+}
+body.edit-mode [data-edit]:hover {
+  outline: 2px solid var(--teal);
+  background: rgba(13,155,138,.04);
+}
+body.edit-mode [data-edit]:focus {
+  outline: 2px solid var(--teal);
+  background: rgba(13,155,138,.06);
+  box-shadow: 0 0 0 4px rgba(13,155,138,.12);
+}
+
+/* ─── SIDE PANEL ─────────────────────────────────────────── */
+#edit-panel {
+  position: fixed; top: 0; right: -400px;
+  width: 380px; height: 100vh;
+  background: var(--white);
+  border-left: 1px solid var(--border);
+  z-index: 9998;
+  display: flex; flex-direction: column;
+  transition: right .3s cubic-bezier(.4,0,.2,1);
+  box-shadow: -8px 0 40px rgba(11,31,58,.1);
+}
+#edit-panel.open { right: 0; }
+
+.ep-head {
+  padding: 1.25rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.ep-title { font-weight: 600; font-size: .95rem; color: var(--navy); }
+.ep-sub { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+.ep-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--border); background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: var(--muted); transition: all .15s;
+}
+.ep-close:hover { background: var(--slate-l); color: var(--navy); }
+
+.ep-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; overflow-x: auto;
+}
+.ep-tab {
+  padding: .6rem 1rem; font-size: .77rem; font-weight: 500;
+  color: var(--muted); cursor: pointer; border: none; background: none;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  white-space: nowrap; font-family: var(--body); transition: all .15s;
+}
+.ep-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+.ep-tab:hover:not(.active) { color: var(--navy); }
+
+.ep-body {
+  flex: 1; overflow-y: auto; padding: 1.2rem 1.4rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+
+.ep-section { display: none; flex-direction: column; gap: 1rem; }
+.ep-section.active { display: flex; }
+
+.ep-field { display: flex; flex-direction: column; gap: 4px; }
+.ep-label {
+  font-size: .7rem; font-weight: 600;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted);
+}
+.ep-input, .ep-textarea {
+  font-family: var(--body);
+  font-size: .85rem;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .55rem .8rem;
+  width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+  background: var(--white);
+  resize: none;
+}
+.ep-input:focus, .ep-textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(13,155,138,.12);
+}
+.ep-textarea { min-height: 80px; line-height: 1.6; }
+.ep-hint { font-size: .68rem; color: var(--muted); }
+
+/* Impact number rows */
+.impact-editor { display: grid; grid-template-columns: 1fr 1.6fr; gap: 6px; }
+
+/* Tag editor */
+.tags-editor { display: flex; flex-wrap: wrap; gap: 6px; padding: .6rem; border: 1px solid var(--border); border-radius: 8px; min-height: 48px; cursor: text; }
+.tag-pill { display: inline-flex; align-items: center; gap: 5px; background: var(--slate-l); border: 1px solid var(--border); border-radius: 100px; padding: 3px 8px 3px 10px; font-size: .73rem; color: var(--slate); }
+.tag-pill button { border: none; background: none; cursor: pointer; color: var(--muted); font-size: .7rem; line-height: 1; padding: 0; }
+.tag-pill button:hover { color: #E24B4A; }
+.tag-add-input { border: none; outline: none; font-family: var(--body); font-size: .73rem; color: var(--text); background: transparent; min-width: 80px; flex: 1; }
+.ep-add-hint { font-size: .68rem; color: var(--muted); }
+
+/* Photo upload */
+.photo-drop {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+}
+.photo-drop:hover { border-color: var(--teal); background: var(--teal-l); }
+.photo-drop-icon { font-size: 1.8rem; margin-bottom: .5rem; }
+.photo-drop-label { font-size: .82rem; color: var(--muted); }
+.photo-drop-sub { font-size: .7rem; color: var(--muted); margin-top: 3px; }
+#photo-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; display: none; margin: .5rem auto 0; border: 2px solid var(--teal); }
+
+/* Footer actions */
+.ep-foot {
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: .6rem;
+  flex-shrink: 0;
+}
+.ep-save-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  background: var(--teal);
+  color: #fff;
+  border: none; cursor: pointer;
+  padding: .75rem;
+  border-radius: 9px;
+  font-family: var(--body);
+  font-size: .88rem; font-weight: 500;
+  transition: all .2s;
+}
+.ep-save-btn:hover { background: #0b8a7b; transform: translateY(-1px); }
+.ep-save-btn.saving { opacity: .7; pointer-events: none; }
+
+.ep-dl-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  background: var(--white);
+  color: var(--navy);
+  border: 1px solid var(--border); cursor: pointer;
+  padding: .65rem;
+  border-radius: 9px;
+  font-family: var(--body);
+  font-size: .82rem; font-weight: 500;
+  transition: all .2s;
+}
+.ep-dl-btn:hover { border-color: var(--navy); background: var(--slate-l); }
+
+.ep-foot-note {
+  font-size: .68rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 90px; right: 24px;
+  background: var(--navy);
+  color: #fff;
+  padding: .7rem 1.2rem;
+  border-radius: 9px;
+  font-size: .82rem; font-weight: 500;
+  opacity: 0; transform: translateY(8px);
+  transition: all .3s;
+  pointer-events: none;
+  z-index: 99999;
+}
+#toast.show { opacity: 1; transform: none; }
+
+/* ─── NAV ─────────────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;background:rgba(255,255,255,0.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:200;padding:0 2.5rem;display:flex;align-items:center;justify-content:space-between;height:58px}
+.nav-logo{font-family:var(--display);font-size:1.15rem;color:var(--navy);text-decoration:none;letter-spacing:-.01em}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{text-decoration:none;font-size:0.82rem;font-weight:500;color:var(--slate);letter-spacing:.05em;text-transform:uppercase;transition:color .2s}
+.nav-links a:hover{color:var(--teal)}
+.nav-cta{display:inline-flex;align-items:center;gap:6px;background:var(--teal);color:#fff;text-decoration:none;padding:8px 18px;border-radius:8px;font-size:0.82rem;font-weight:500;transition:all .2s}
+.nav-cta:hover{background:#0b8a7b}
+
+/* ─── HERO ─────────────────────────────────────────────────── */
+#hero{min-height:100vh;display:flex;align-items:center;background:var(--navy);position:relative;overflow:hidden;padding:80px 8vw 60px}
+.hero-inner{max-width:1100px;width:100%;margin:0 auto;display:grid;grid-template-columns:1fr 320px;gap:4rem;align-items:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(13,155,138,.12);border:1px solid rgba(13,155,138,.35);color:var(--teal-m);font-size:.75rem;font-weight:500;letter-spacing:.09em;text-transform:uppercase;padding:6px 14px;border-radius:100px;margin-bottom:1.5rem}
+.hero-badge-dot{width:6px;height:6px;background:var(--teal-m);border-radius:50%;animation:bdot 2s infinite}
+@keyframes bdot{0%,100%{opacity:1}50%{opacity:.35}}
+.hero-h1{font-family:var(--display);font-size:clamp(2.2rem,4.5vw,3.8rem);color:#fff;line-height:1.15;margin-bottom:1.4rem}
+.hero-h1 em{font-style:italic;color:var(--teal-m)}
+.hero-p{font-size:1.02rem;color:rgba(255,255,255,.62);max-width:540px;margin-bottom:2.5rem;line-height:1.85}
+.hero-btns{display:flex;gap:.75rem;flex-wrap:wrap}
+.btn-p{display:inline-flex;align-items:center;gap:7px;background:var(--teal);color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-size:.88rem;font-weight:500;transition:all .2s;border:none;cursor:pointer}
+.btn-p:hover{background:#0b8a7b;transform:translateY(-1px)}
+.btn-o{display:inline-flex;align-items:center;gap:7px;background:transparent;color:rgba(255,255,255,.75);text-decoration:none;padding:12px 22px;border-radius:8px;font-size:.88rem;font-weight:500;border:1px solid rgba(255,255,255,.22);transition:all .2s}
+.btn-o:hover{border-color:rgba(255,255,255,.55);color:#fff}
+.avatar-wrap{display:flex;flex-direction:column;align-items:center;gap:1rem}
+.avatar{width:260px;height:260px;border-radius:50%;background:linear-gradient(135deg,rgba(13,155,138,.25),rgba(11,31,58,.9));border:2px solid rgba(13,155,138,.35);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;position:relative;flex-shrink:0}
+.avatar-emoji{font-size:6.5rem;line-height:1;position:absolute;bottom:8px;user-select:none}
+.avatar-ring{position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(13,155,138,.18);animation:spin 22s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.avatar-online{position:absolute;top:18px;right:24px;width:11px;height:11px;background:var(--teal);border-radius:50%;border:2px solid var(--navy)}
+.avatar-name{font-size:.92rem;color:#fff;font-weight:500;text-align:center}
+.avatar-sub{font-size:.73rem;color:rgba(255,255,255,.38);margin-top:2px;text-align:center}
+.avatar-chips{display:flex;gap:5px;justify-content:center;margin-top:7px;flex-wrap:wrap}
+.chip{background:rgba(13,155,138,.14);border:1px solid rgba(13,155,138,.28);color:var(--teal-m);font-size:.67rem;padding:3px 8px;border-radius:100px;font-weight:500}
+.h-circle{position:absolute;border-radius:50%;opacity:.035;background:var(--teal);pointer-events:none}
+#avatar-photo{width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0}
+
+/* ─── SECTIONS ─────────────────────────────────────────────── */
+section{padding:88px 8vw}
+.s-inner{max-width:1100px;margin:0 auto}
+.s-label{font-size:.73rem;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--teal);margin-bottom:.65rem}
+.s-title{font-family:var(--display);font-size:clamp(1.7rem,3vw,2.5rem);color:var(--navy);line-height:1.22;margin-bottom:.9rem}
+.s-sub{font-size:.97rem;color:var(--muted);max-width:620px;line-height:1.82}
+
+/* ABOUT */
+#about{background:var(--slate-l)}
+.about-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:5rem;align-items:start;margin-top:2.5rem}
+.about-p{color:var(--slate);font-size:.95rem;line-height:1.9;margin-bottom:1.1rem}
+.about-p strong{color:var(--navy);font-weight:600}
+.tag-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:1.5rem}
+.atag{font-size:.72rem;font-weight:500;padding:5px 12px;border-radius:100px;background:var(--white);border:1px solid var(--border);color:var(--slate)}
+.about-cards{display:flex;flex-direction:column;gap:.9rem}
+.acard{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;display:flex;align-items:flex-start;gap:.9rem}
+.acard-icon{width:38px;height:38px;flex-shrink:0;background:var(--teal-l);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.acard-title{font-weight:600;font-size:.87rem;color:var(--navy)}
+.acard-body{font-size:.79rem;color:var(--muted);margin-top:2px;line-height:1.5}
+
+/* WORK */
+#work{background:var(--white)}
+.work-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-top:2.5rem;overflow-x:auto}
+.wtab{padding:.75rem 1.5rem;font-size:.82rem;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s;font-family:var(--body)}
+.wtab.active{color:var(--teal);border-bottom-color:var(--teal)}
+.wproject{display:none;margin-top:2rem}
+.wproject.active{display:block}
+.proj-layout{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:start}
+.proj-tags-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.ptag{font-size:.7rem;font-weight:500;padding:3px 10px;border-radius:100px;letter-spacing:.03em;text-transform:uppercase}
+.pt-teal{background:var(--teal-l);color:#0b7a6b}
+.pt-amber{background:var(--amber-l);color:#c27d0e}
+.pt-navy{background:#EEF2F8;color:var(--navy2)}
+.proj-title{font-family:var(--display);font-size:1.5rem;color:var(--navy);margin-bottom:.5rem}
+.proj-sub{font-size:.82rem;color:var(--teal);font-weight:500;margin-bottom:1rem;font-style:italic}
+.proj-desc{font-size:.9rem;color:var(--slate);line-height:1.8;margin-bottom:1.5rem}
+.proj-impact{background:var(--slate-l);border-radius:12px;padding:1.1rem 1.4rem}
+.proj-impact-title{font-size:.72rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--teal);margin-bottom:.75rem}
+.impact-row{display:flex;gap:2rem;flex-wrap:wrap}
+.impact-num{font-family:var(--display);font-size:1.4rem;color:var(--navy)}
+.impact-lab{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.proj-right{position:relative}
+.dash-frame{background:var(--navy);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.07)}
+.dash-topbar{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07)}
+.dash-dots{display:flex;gap:5px}
+.dash-dot{width:10px;height:10px;border-radius:50%}
+.dash-label{font-size:.68rem;color:rgba(255,255,255,.3);font-family:var(--mono)}
+.dash-body{padding:1rem}
+
+/* Dashboard internals — abbreviated for brevity, same as main site */
+.wf-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px}
+.wf-kpi{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:10px 12px}
+.wf-kpi-label{font-size:.6rem;font-weight:500;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.wf-kpi-val{font-size:1.3rem;font-family:var(--display);color:#fff}
+.wf-kpi-sub{font-size:.58rem;color:rgba(255,255,255,.28);margin-top:2px}
+.wf-funnel{background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.wf-f-title{font-size:.62rem;font-weight:500;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.wf-f-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;position:relative}
+.wf-f-stage{font-size:.62rem;color:rgba(255,255,255,.4);width:110px;flex-shrink:0;text-align:right}
+.wf-f-bwrap{flex:1;height:18px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.wf-f-bar{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:7px;font-size:.6rem;font-family:var(--mono);font-weight:500}
+.wf-f-pct{font-size:.58rem;color:rgba(255,255,255,.3);width:28px;text-align:right}
+.wf-tooltip{display:none;position:absolute;left:120px;top:-28px;background:rgba(11,31,58,.97);border:1px solid rgba(13,155,138,.4);color:#fff;font-size:.65rem;padding:5px 10px;border-radius:6px;z-index:10;white-space:nowrap;pointer-events:none}
+.wf-f-row:hover .wf-tooltip{display:block}
+.wf-poll{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.wf-poll-card{background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px}
+.wf-poll-title{font-size:.6rem;font-weight:500;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.poll-item{display:flex;align-items:center;gap:6px;margin-bottom:5px;position:relative}
+.poll-item:hover .wf-tooltip{display:block}
+.poll-item-label{font-size:.58rem;color:rgba(255,255,255,.45);flex:1;line-height:1.3}
+.poll-bwrap{width:60px;height:5px;background:rgba(255,255,255,.08);border-radius:2px}
+.poll-bar{height:100%;border-radius:2px}
+.poll-pct{font-size:.62rem;font-weight:500;font-family:var(--mono);color:rgba(255,255,255,.75);width:26px;text-align:right}
+.sms-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.sms-kpi{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:10px 12px}
+.sms-kpi-label{font-size:.58rem;font-weight:500;color:rgba(255,255,255,.32);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.sms-kpi-val{font-size:1.15rem;font-family:var(--display);color:#fff}
+.sms-kpi-trend{font-size:.58rem;margin-top:2px}
+.trend-up{color:#5ECFBF}.trend-dn{color:#F08080}
+.sms-funnel{background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.sms-funnel-title{font-size:.62rem;font-weight:500;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.sf-step{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.sf-label{font-size:.6rem;color:rgba(255,255,255,.4);width:100px;flex-shrink:0}
+.sf-bwrap{flex:1;height:16px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.sf-bar{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:6px;font-size:.6rem;font-family:var(--mono)}
+.sf-num{font-size:.6rem;color:rgba(255,255,255,.45);width:50px;text-align:right;font-family:var(--mono)}
+.sms-table{width:100%;border-collapse:collapse}
+.sms-table th{font-size:.58rem;font-weight:500;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.06em;padding:5px 7px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+.sms-table td{font-size:.62rem;color:rgba(255,255,255,.65);padding:5px 7px;border-bottom:1px solid rgba(255,255,255,.05)}
+.sms-table .hl{color:var(--teal-m);font-weight:500}
+.sms-badge{display:inline-block;font-size:.56rem;padding:2px 6px;border-radius:3px}
+.sb-d{background:rgba(13,155,138,.2);color:#5ECFBF}
+.sb-s{background:rgba(245,166,35,.2);color:#F5A623}
+.mfs-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mfs-logo{font-size:.8rem;color:rgba(255,255,255,.6);font-weight:600}
+.mfs-dates{font-size:.6rem;color:rgba(255,255,255,.3);font-family:var(--mono)}
+.mfs-kpis{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.mfs-kpi{background:rgba(255,255,255,.06);border-radius:8px;padding:10px 14px}
+.mfs-kpi-label{font-size:.6rem;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.mfs-kpi-val{font-size:1.4rem;font-family:var(--display);color:#fff}
+.mfs-kpi-sub{font-size:.58rem;color:var(--teal-m);margin-top:2px}
+.mfs-funnel{background:rgba(255,255,255,.04);border-radius:8px;padding:12px;margin-bottom:10px}
+.mfs-funnel-title{font-size:.62rem;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.mfs-fstep{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.mfs-flabel{font-size:.6rem;color:rgba(255,255,255,.4);width:120px;flex-shrink:0}
+.mfs-fbwrap{flex:1;height:20px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.mfs-fbar{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:7px;font-size:.62rem;font-family:var(--mono)}
+.mfs-fnum{font-size:.6rem;color:rgba(255,255,255,.45);width:60px;text-align:right;font-family:var(--mono)}
+.mfs-table-wrap{background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px}
+.mfs-table{width:100%;border-collapse:collapse}
+.mfs-table th{font-size:.56rem;font-weight:500;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.05em;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.07);text-align:right}
+.mfs-table th:first-child{text-align:left}
+.mfs-table td{font-size:.6rem;color:rgba(255,255,255,.6);padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right}
+.mfs-table td:first-child{text-align:left;color:rgba(255,255,255,.75)}
+.auto-vis{padding:1rem}
+.auto-before-after{display:flex;align-items:center;justify-content:center;gap:1.5rem;margin-bottom:1.2rem}
+.auto-box{text-align:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:1rem 1.5rem}
+.auto-num{font-family:var(--display);font-size:2rem}
+.auto-lbl{font-size:.62rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.auto-sublbl{font-size:.6rem;color:rgba(255,255,255,.2);margin-top:4px}
+.auto-arrow{font-size:1.2rem;color:rgba(13,155,138,.5)}
+.auto-stack{display:flex;flex-direction:column;gap:5px}
+.auto-step{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border-radius:6px;padding:6px 10px}
+.auto-step-num{width:18px;height:18px;background:rgba(13,155,138,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--teal-m);font-weight:600;flex-shrink:0}
+.auto-step-text{font-size:.65rem;color:rgba(255,255,255,.55)}
+.auto-step-tag{margin-left:auto;font-size:.57rem;background:rgba(13,155,138,.15);color:var(--teal-m);padding:2px 6px;border-radius:3px;font-family:var(--mono);white-space:nowrap}
+
+/* SKILLS */
+#skills{background:var(--slate-l)}
+.skills-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-top:2.5rem}
+.sk-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1.3rem}
+.sk-icon{font-size:1.3rem;margin-bottom:.65rem}
+.sk-title{font-weight:600;font-size:.87rem;color:var(--navy);margin-bottom:.7rem}
+.sk-pills{display:flex;flex-wrap:wrap;gap:4px}
+.sk-pill{font-size:.7rem;background:var(--slate-l);color:var(--slate);padding:3px 9px;border-radius:100px;border:1px solid var(--border)}
+.cert{display:inline-flex;align-items:center;gap:5px;background:var(--amber-l);border:1px solid #f5d48a;color:#8a5e00;font-size:.7rem;font-weight:500;padding:4px 9px;border-radius:7px;margin-top:.45rem}
+
+/* EXPERIENCE */
+#experience{background:var(--white)}
+.exp-tl{margin-top:2.5rem;position:relative}
+.exp-tl::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--border)}
+.exp-item{padding-left:2.2rem;padding-bottom:2.2rem;position:relative}
+.exp-item::before{content:'';position:absolute;left:-5px;top:6px;width:12px;height:12px;background:var(--teal);border-radius:50%;border:2px solid var(--white);box-shadow:0 0 0 2px var(--teal)}
+.exp-meta{display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap;margin-bottom:.35rem}
+.exp-co{font-weight:600;font-size:.97rem;color:var(--navy)}
+.exp-role{font-size:.82rem;color:var(--muted);font-style:italic}
+.exp-date{font-size:.73rem;color:var(--muted);font-family:var(--mono);margin-left:auto}
+.exp-buls{list-style:none;margin-top:.45rem}
+.exp-buls li{font-size:.865rem;color:var(--slate);line-height:1.75;padding:2px 0 2px 1.1rem;position:relative}
+.exp-buls li::before{content:'→';position:absolute;left:0;color:var(--teal);font-size:.78rem}
+.exp-buls li strong{color:var(--navy);font-weight:600}
+
+/* CONTACT */
+#contact{background:var(--navy);text-align:center;padding:100px 8vw}
+#contact .s-label{color:var(--teal-m)}
+.c-title{font-family:var(--display);font-size:clamp(1.8rem,3vw,2.8rem);color:#fff;max-width:580px;margin:0 auto 1rem;line-height:1.2}
+.c-sub{font-size:.97rem;color:rgba(255,255,255,.5);margin:0 auto 2.5rem;max-width:480px;line-height:1.8}
+.c-links{display:flex;align-items:center;justify-content:center;gap:.8rem;flex-wrap:wrap}
+.c-link{display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-size:.88rem;font-weight:500;padding:11px 20px;border-radius:9px;border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.75);transition:all .2s}
+.c-link:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.28);color:#fff}
+.c-link.cp{background:var(--teal);border-color:var(--teal);color:#fff}
+.c-link.cp:hover{background:#0b8a7b}
+footer{background:#060f1e;text-align:center;padding:1.5rem;font-size:.75rem;color:rgba(255,255,255,.2)}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .55s ease}
+.reveal.in{opacity:1;transform:none}
+@media(max-width:900px){.hero-inner,.about-grid,.proj-layout{grid-template-columns:1fr}.skills-grid{grid-template-columns:repeat(2,1fr)}.nav-links{display:none}.avatar{width:180px;height:180px;margin:0 auto}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     EDITOR UI
+═══════════════════════════════════════════════════ -->
+<div id="editor-bar">
+  <button id="edit-toggle" onclick="toggleEdit()">
+    <span class="et-dot"></span>
+    <span id="toggle-label">Edit Site</span>
+  </button>
+</div>
+
+<div id="edit-panel">
+  <div class="ep-head">
+    <div><div class="ep-title">✏️ Site Editor</div><div class="ep-sub">Click any section to edit</div></div>
+    <button class="ep-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="ep-tabs">
+    <button class="ep-tab active" onclick="switchTab('hero',this)">Hero</button>
+    <button class="ep-tab" onclick="switchTab('about',this)">About</button>
+    <button class="ep-tab" onclick="switchTab('projects',this)">Projects</button>
+    <button class="ep-tab" onclick="switchTab('contact',this)">Contact</button>
+    <button class="ep-tab" onclick="switchTab('photo',this)">Photo</button>
+  </div>
+  <div class="ep-body">
+
+    <!-- HERO TAB -->
+    <div class="ep-section active" id="tab-hero">
+      <div class="ep-field">
+        <div class="ep-label">Status badge text</div>
+        <input class="ep-input" id="f-badge" value="Open to opportunities · Los Angeles, CA" oninput="syncField('badge','hero-badge-text')"/>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Main headline</div>
+        <textarea class="ep-textarea" id="f-h1" oninput="syncField('h1','hero-h1-text')">I build the systems that turn marketing data into decisions that actually land.</textarea>
+        <div class="ep-hint">The last phrase will be styled in teal italic automatically</div>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Hero description</div>
+        <textarea class="ep-textarea" id="f-herop" style="min-height:100px" oninput="syncField('herop','hero-p-text')">Business Analyst specializing in healthcare & CPG marketing analytics. I design dashboards, measurement frameworks, and automated pipelines that give strategy teams the evidence to act — not just the charts to present.</textarea>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Your name (avatar card)</div>
+        <input class="ep-input" id="f-name" value="Sneha Jain" oninput="syncField('name','avatar-name')"/>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Subtitle under name</div>
+        <input class="ep-input" id="f-namesub" value="MS Business Analytics · Babson College" oninput="syncField('namesub','avatar-sub')"/>
+      </div>
+    </div>
+
+    <!-- ABOUT TAB -->
+    <div class="ep-section" id="tab-about">
+      <div class="ep-field">
+        <div class="ep-label">Paragraph 1</div>
+        <textarea class="ep-textarea" id="f-about1" style="min-height:110px" oninput="syncField('about1','about-p1')">I'm a Business Analyst with deep expertise in healthcare and CPG marketing analytics — specializing in Salesforce Marketing Cloud, Tableau, and end-to-end data pipeline design.</textarea>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Paragraph 2</div>
+        <textarea class="ep-textarea" id="f-about2" style="min-height:110px" oninput="syncField('about2','about-p2')">My edge: I don't just report on what happened. I build the measurement infrastructure that tells you why it happened — causal attribution frameworks, automated QA protocols, and self-serve dashboards that prove digital marketing drives real-world patient behavior.</textarea>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Paragraph 3</div>
+        <textarea class="ep-textarea" id="f-about3" style="min-height:80px" oninput="syncField('about3','about-p3')">Previously: EY (financial modeling for a $37B client), Nestlé India (pricing analytics), SAP (BI dashboards). MS Business Analytics, Babson College — GPA 3.8.</textarea>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Industry tags <span class="ep-hint">(type + Enter to add, × to remove)</span></div>
+        <div class="tags-editor" id="tags-editor" onclick="document.getElementById('tag-input').focus()">
+          <span class="tag-pill">Healthcare <button onclick="removeTag(this)">×</button></span>
+          <span class="tag-pill">CPG <button onclick="removeTag(this)">×</button></span>
+          <span class="tag-pill">Consulting <button onclick="removeTag(this)">×</button></span>
+          <span class="tag-pill">Patient Journeys <button onclick="removeTag(this)">×</button></span>
+          <span class="tag-pill">Causal Analytics <button onclick="removeTag(this)">×</button></span>
+          <span class="tag-pill">ETL Pipelines <button onclick="removeTag(this)">×</button></span>
+          <input class="tag-add-input" id="tag-input" placeholder="Add tag…" onkeydown="addTag(event)"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTS TAB -->
+    <div class="ep-section" id="tab-projects">
+      <div class="ep-field">
+        <div class="ep-label">Active project to edit</div>
+        <select class="ep-input" id="proj-select" onchange="switchProjEdit(this.value)">
+          <option value="1">1 — Voucher Journey Funnel</option>
+          <option value="2">2 — SMS Analytics Dashboard</option>
+          <option value="3">3 — MFS App Activation</option>
+          <option value="4">4 — Reporting Automation</option>
+        </select>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Project title</div>
+        <input class="ep-input" id="f-proj-title" value="FSL3+ Voucher Journey End-to-End Funnel Analytics" oninput="syncProjField('title')"/>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Subtitle / tools line</div>
+        <input class="ep-input" id="f-proj-sub" value="Poll response correlation · Redemption tracking · Sensor activation" oninput="syncProjField('sub')"/>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Description</div>
+        <textarea class="ep-textarea" id="f-proj-desc" style="min-height:100px" oninput="syncProjField('desc')">Designed and measured a multi-channel patient journey program. Built the funnel visibility layer mapping email engagement → poll response → pharmacy voucher redemption → sensor activation.</textarea>
+      </div>
+      <div class="ep-label" style="margin-top:.25rem">Impact metrics</div>
+      <div class="impact-editor">
+        <input class="ep-input" id="f-imp1n" placeholder="e.g. +10.1pp" value="+10.1pp" oninput="syncProjImpact()"/>
+        <input class="ep-input" id="f-imp1l" placeholder="Label" value="Causal email lift" oninput="syncProjImpact()"/>
+        <input class="ep-input" id="f-imp2n" placeholder="e.g. 371K" value="371K" oninput="syncProjImpact()"/>
+        <input class="ep-input" id="f-imp2l" placeholder="Label" value="Patients tracked" oninput="syncProjImpact()"/>
+        <input class="ep-input" id="f-imp3n" placeholder="e.g. 65%" value="65%" oninput="syncProjImpact()"/>
+        <input class="ep-input" id="f-imp3l" placeholder="Label" value="Convert in 14 days" oninput="syncProjImpact()"/>
+      </div>
+    </div>
+
+    <!-- CONTACT TAB -->
+    <div class="ep-section" id="tab-contact">
+      <div class="ep-field">
+        <div class="ep-label">Email address</div>
+        <input class="ep-input" id="f-email" value="sjain6576@gmail.com" oninput="syncContact()"/>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">LinkedIn URL</div>
+        <input class="ep-input" id="f-linkedin" value="https://linkedin.com/in/snehaj18" oninput="syncContact()"/>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Phone number</div>
+        <input class="ep-input" id="f-phone" value="(857) 247-6681" oninput="syncContact()"/>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Contact section headline</div>
+        <textarea class="ep-textarea" id="f-ctitle" oninput="syncField('ctitle','c-title')">I'd love to hear what you're building.</textarea>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Contact description</div>
+        <textarea class="ep-textarea" id="f-csub" oninput="syncField('csub','c-sub')">Whether you need someone who can own analytics end-to-end, build a measurement framework for a new program, or just talk data strategy — I'm open to it.</textarea>
+      </div>
+    </div>
+
+    <!-- PHOTO TAB -->
+    <div class="ep-section" id="tab-photo">
+      <div class="ep-field">
+        <div class="ep-label">Profile photo / Memoji</div>
+        <div class="photo-drop" onclick="document.getElementById('photo-input').click()" id="photo-drop">
+          <div class="photo-drop-icon">📸</div>
+          <div class="photo-drop-label">Click to upload your photo or Memoji</div>
+          <div class="photo-drop-sub">PNG, JPG up to 5MB · Will appear in the hero circle</div>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
+        <img id="photo-preview" src="" alt="Preview"/>
+        <div class="ep-hint" style="margin-top:6px">If no photo uploaded, the 👩🏻‍💻 emoji shows instead</div>
+      </div>
+      <div class="ep-field">
+        <div class="ep-label">Avatar emoji (shown if no photo)</div>
+        <input class="ep-input" id="f-emoji" value="👩🏻‍💻" oninput="document.querySelector('.avatar-emoji').textContent=this.value"/>
+        <div class="ep-hint">You can paste any emoji here</div>
+      </div>
+    </div>
+
+  </div><!-- /ep-body -->
+
+  <div class="ep-foot">
+    <button class="ep-save-btn" onclick="applyAndDownload()" id="save-btn">
+      ⬇ Save & Download Updated Site
+    </button>
+    <div class="ep-foot-note">Download the file → upload it to GitHub as <strong>index.html</strong> → your live site updates in ~30 seconds</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     PORTFOLIO SITE (same as before, with data-edit attrs)
+═══════════════════════════════════════════════════ -->
+
+<nav>
+  <a href="#hero" class="nav-logo">SJ.</a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#work">Work</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="mailto:sjain6576@gmail.com" class="nav-cta" id="nav-email-link">Let's Talk →</a>
+</nav>
+
+<section id="hero">
+  <div class="h-circle" style="width:700px;height:700px;top:-250px;right:-120px"></div>
+  <div class="h-circle" style="width:320px;height:320px;bottom:-60px;left:8%"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge"><span class="hero-badge-dot"></span><span id="hero-badge-text" data-edit="badge">Open to opportunities · Los Angeles, CA</span></div>
+      <h1 class="hero-h1" id="hero-h1-text" data-edit="h1">
+        I build the systems that turn marketing data into decisions that <em>actually land.</em>
+      </h1>
+      <p class="hero-p" id="hero-p-text" data-edit="herop">Business Analyst specializing in healthcare & CPG marketing analytics. I design dashboards, measurement frameworks, and automated pipelines that give strategy teams the evidence to act — not just the charts to present.</p>
+      <div class="hero-btns">
+        <a href="#work" class="btn-p">See My Work →</a>
+        <a href="#contact" class="btn-o">Get in Touch</a>
+      </div>
+    </div>
+    <div class="avatar-wrap">
+      <div class="avatar">
+        <div class="avatar-ring"></div>
+        <div class="avatar-online"></div>
+        <img id="avatar-photo" src="" alt=""/>
+        <div class="avatar-emoji" id="avatar-emoji-el">👩🏻‍💻</div>
+      </div>
+      <div class="avatar-name" id="avatar-name" data-edit="name">Sneha Jain</div>
+      <div class="avatar-sub" id="avatar-sub" data-edit="namesub">MS Business Analytics · Babson College</div>
+      <div class="avatar-chips">
+        <span class="chip">SFMC</span><span class="chip">Tableau</span><span class="chip">SQL</span><span class="chip">Healthcare</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="s-inner">
+    <div class="s-label">About Me</div>
+    <h2 class="s-title">The analyst behind the numbers</h2>
+    <div class="about-grid reveal">
+      <div>
+        <p class="about-p" id="about-p1" data-edit="about1">I'm a <strong>Business Analyst with deep expertise in healthcare and CPG marketing analytics</strong> — specializing in Salesforce Marketing Cloud, Tableau, and end-to-end data pipeline design. Over the last two years I've been embedded in enterprise-scale patient journey programs, working at the intersection of data engineering, campaign strategy, and executive reporting.</p>
+        <p class="about-p" id="about-p2" data-edit="about2">My edge: I don't just report on what happened. I build the <strong>measurement infrastructure</strong> that tells you <em>why</em> it happened — causal attribution frameworks, automated QA protocols, and self-serve dashboards that prove digital marketing drives real-world patient behavior.</p>
+        <p class="about-p" id="about-p3" data-edit="about3">Previously: <strong>EY</strong> (financial modeling for a $37B client), <strong>Nestlé India</strong> (pricing analytics & market dashboards), <strong>SAP</strong> (BI dashboards, sales funnel analytics). MS Business Analytics, Babson College — GPA 3.8.</p>
+        <div class="tag-row" id="tag-row-live">
+          <span class="atag">Healthcare</span><span class="atag">CPG</span><span class="atag">Consulting</span>
+          <span class="atag">Patient Journeys</span><span class="atag">Causal Analytics</span><span class="atag">ETL Pipelines</span>
+        </div>
+      </div>
+      <div class="about-cards">
+        <div class="acard"><div class="acard-icon">🎓</div><div><div class="acard-title">MS Business Analytics — Babson College</div><div class="acard-body">GPA 3.8 · Machine Learning, Marketing Analytics, Storytelling with Data, Pricing Strategy</div></div></div>
+        <div class="acard"><div class="acard-icon">🏥</div><div><div class="acard-title">Industry depth: Healthcare & CPG</div><div class="acard-body">Patient journey analytics in diabetes care · Consumer pricing at Nestlé · Financial modeling at EY</div></div></div>
+        <div class="acard"><div class="acard-icon">📍</div><div><div class="acard-title">Los Angeles, CA — Open to Remote & Hybrid</div><div class="acard-body">Open to healthcare, CPG, fintech, and marketing tech companies</div></div></div>
+        <div class="acard"><div class="acard-icon">⚡</div><div><div class="acard-title">What I love building</div><div class="acard-body">Causal measurement frameworks · Self-serve dashboards executives actually use · Automation that eliminates manual work forever</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="work">
+  <div class="s-inner">
+    <div class="s-label">Featured Work</div>
+    <h2 class="s-title">Projects built in the field</h2>
+    <p class="s-sub">Each project includes a live interactive replica of the actual dashboard or wireframe — fictionalized for privacy.</p>
+    <div class="work-tabs">
+      <button class="wtab active" onclick="showProject('voucher',this)">Voucher Journey Funnel</button>
+      <button class="wtab" onclick="showProject('sms',this)">SMS Analytics Dashboard</button>
+      <button class="wtab" onclick="showProject('mfs',this)">MFS App Activation</button>
+      <button class="wtab" onclick="showProject('auto',this)">Reporting Automation</button>
+    </div>
+
+    <div class="wproject active" id="proj-voucher">
+      <div class="proj-layout">
+        <div>
+          <div class="proj-tags-row"><span class="ptag pt-teal">SFMC</span><span class="ptag pt-amber">Patient Journey</span><span class="ptag pt-navy">Causal Analysis</span></div>
+          <div class="proj-title" id="p1-title">FSL3+ Voucher Journey<br>End-to-End Funnel Analytics</div>
+          <div class="proj-sub" id="p1-sub">Poll response correlation · Redemption tracking · Sensor activation</div>
+          <p class="proj-desc" id="p1-desc">Designed and measured a multi-channel patient journey program. Built the funnel visibility layer mapping email engagement → poll response → pharmacy voucher redemption → sensor activation — a chain nobody had tracked end-to-end before. Then ran a causal analysis proving email isn't just correlated with redemption, it drives it.</p>
+          <div class="proj-impact">
+            <div class="proj-impact-title">Impact</div>
+            <div class="impact-row">
+              <div><div class="impact-num" id="p1-i1n">+10.1pp</div><div class="impact-lab" id="p1-i1l">Causal email lift</div></div>
+              <div><div class="impact-num" id="p1-i2n">371K</div><div class="impact-lab" id="p1-i2l">Patients tracked</div></div>
+              <div><div class="impact-num" id="p1-i3n">65%</div><div class="impact-lab" id="p1-i3l">Convert in 14 days</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="proj-right">
+          <div class="dash-frame">
+            <div class="dash-topbar"><div class="dash-dots"><div class="dash-dot" style="background:#FF5F56"></div><div class="dash-dot" style="background:#FFBD2E"></div><div class="dash-dot" style="background:#27C93F"></div></div><div class="dash-label">FSL3+ Voucher Journey — Dashboard Wireframe</div></div>
+            <div class="dash-body">
+              <div class="wf-kpis">
+                <div class="wf-kpi"><div class="wf-kpi-label">Vouchers Issued</div><div class="wf-kpi-val">94,927</div><div class="wf-kpi-sub">Starting cohort</div></div>
+                <div class="wf-kpi"><div class="wf-kpi-label">Poll Respondents</div><div class="wf-kpi-val">23,158</div><div class="wf-kpi-sub">24% of issued</div></div>
+                <div class="wf-kpi"><div class="wf-kpi-label">Vouchers Redeemed</div><div class="wf-kpi-val">23,158</div><div class="wf-kpi-sub">Overall cohort</div></div>
+                <div class="wf-kpi"><div class="wf-kpi-label">Redemption Rate</div><div class="wf-kpi-val" style="color:var(--teal-m)">24%</div><div class="wf-kpi-sub">Redeemed ÷ issued</div></div>
+              </div>
+              <div class="wf-funnel">
+                <div class="wf-f-title">Journey Funnel — hover any row for insight</div>
+                <div class="wf-f-row"><span class="wf-tooltip">Starting cohort — all users issued a voucher</span><div class="wf-f-stage">Voucher Issued</div><div class="wf-f-bwrap"><div class="wf-f-bar" style="width:100%;background:rgba(94,207,191,.65);color:#fff">94,927</div></div><div class="wf-f-pct">100%</div></div>
+                <div class="wf-f-row"><span class="wf-tooltip">88% entered journey — strong initial engagement</span><div class="wf-f-stage">Entered Journey</div><div class="wf-f-bwrap"><div class="wf-f-bar" style="width:88%;background:rgba(94,207,191,.55);color:#fff">~83,500</div></div><div class="wf-f-pct">88%</div></div>
+                <div class="wf-f-row"><span class="wf-tooltip">62% opened email or SMS — above industry average</span><div class="wf-f-stage">Email / SMS Opens</div><div class="wf-f-bwrap"><div class="wf-f-bar" style="width:62%;background:rgba(94,207,191,.45);color:#fff">~52,000</div></div><div class="wf-f-pct">62%</div></div>
+                <div class="wf-f-row"><span class="wf-tooltip">40% clicked CTA — high intent signal</span><div class="wf-f-stage">CTA Engaged</div><div class="wf-f-bwrap"><div class="wf-f-bar" style="width:40%;background:rgba(245,166,35,.65);color:#fff">~33,700</div></div><div class="wf-f-pct">40%</div></div>
+                <div class="wf-f-row"><span class="wf-tooltip">Only 24% answered poll — opportunity to increase this</span><div class="wf-f-stage">Poll Responded</div><div class="wf-f-bwrap"><div class="wf-f-bar" style="width:24%;background:rgba(245,166,35,.55);color:#fff">23,158</div></div><div class="wf-f-pct">24%</div></div>
+                <div class="wf-f-row"><span class="wf-tooltip">24% redemption rate — primary KPI of the program</span><div class="wf-f-stage">Voucher Redeemed</div><div class="wf-f-bwrap"><div class="wf-f-bar" style="width:24%;background:rgba(245,166,35,.8);color:#fff">23,158</div></div><div class="wf-f-pct">24%</div></div>
+                <div class="wf-f-row"><span class="wf-tooltip">🔑 76% of redeemers never activated — biggest gap is post-pickup, not email</span><div class="wf-f-stage">Sensor Activated</div><div class="wf-f-bwrap"><div class="wf-f-bar" style="width:14%;background:rgba(220,80,60,.75);color:#fff">~13,300</div></div><div class="wf-f-pct" style="color:#F08080">~14%</div></div>
+              </div>
+              <div class="wf-poll">
+                <div class="wf-poll-card">
+                  <div class="wf-poll-title">Poll answer → redemption rate</div>
+                  <div class="poll-item"><span class="wf-tooltip">Highest redemption — already in Rx process</span><div class="poll-item-label">Received prescription</div><div class="poll-bwrap"><div class="poll-bar" style="width:100%;background:var(--teal-m)"></div></div><div class="poll-pct" style="color:var(--teal-m)">36%</div></div>
+                  <div class="poll-item"><span class="wf-tooltip">Appointment scheduled — motivated, needs nudge</span><div class="poll-item-label">Apt scheduled</div><div class="poll-bwrap"><div class="poll-bar" style="width:67%;background:rgba(94,207,191,.7)"></div></div><div class="poll-pct">24%</div></div>
+                  <div class="poll-item"><span class="wf-tooltip">Cost concern — needs education content</span><div class="poll-item-label">Cost & coverage</div><div class="poll-bwrap"><div class="poll-bar" style="width:56%;background:rgba(245,166,35,.7)"></div></div><div class="poll-pct">20%</div></div>
+                  <div class="poll-item"><span class="wf-tooltip">Hasn't requested Rx — biggest friction point</span><div class="poll-item-label">No Rx yet</div><div class="poll-bwrap"><div class="poll-bar" style="width:44%;background:rgba(220,80,60,.6)"></div></div><div class="poll-pct" style="color:#F08080">16%</div></div>
+                  <div class="poll-item"><span class="wf-tooltip">Needs support — suppression + outreach triggered</span><div class="poll-item-label">Needs Rx support</div><div class="poll-bwrap"><div class="poll-bar" style="width:44%;background:rgba(220,80,60,.5)"></div></div><div class="poll-pct" style="color:#F08080">16%</div></div>
+                </div>
+                <div class="wf-poll-card">
+                  <div class="wf-poll-title">Sensor activation of redeemers</div>
+                  <div style="text-align:center;padding:1rem 0">
+                    <svg width="90" height="90" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="14"/><circle cx="50" cy="50" r="40" fill="none" stroke="#F08080" stroke-width="14" stroke-dasharray="251" stroke-dashoffset="108" stroke-linecap="round" transform="rotate(-90 50 50)"/><text x="50" y="46" text-anchor="middle" fill="#F08080" font-size="14" font-weight="600" font-family="DM Serif Display,serif">57%</text><text x="50" y="60" text-anchor="middle" fill="rgba(255,255,255,.3)" font-size="7" font-family="DM Sans,sans-serif">activated</text></svg>
+                    <div style="font-size:.6rem;color:rgba(255,255,255,.3);margin-top:.4rem">~13,300 of 23,158 redeemers</div>
+                    <div style="font-size:.63rem;color:#F08080;margin-top:.25rem;font-weight:500">⚠ 76% post-pickup dropout</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wproject" id="proj-sms">
+      <div class="proj-layout">
+        <div>
+          <div class="proj-tags-row"><span class="ptag pt-teal">SMS</span><span class="ptag pt-amber">SFMC</span><span class="ptag pt-navy">Journey Analytics</span></div>
+          <div class="proj-title" id="p2-title">SMS Analytics Dashboard</div>
+          <div class="proj-sub" id="p2-sub">MFS Program · 248K sends · Click-to-conversion tracking</div>
+          <p class="proj-desc" id="p2-desc">Built the SMS performance intelligence layer for the MFS patient program — tracking sends, delivery, bounce, click-through, opt-in segmentation, and CTA-level performance across 5 journey categories. Key insight: double opt-in patients consistently outperformed, shaping the program's SMS enrollment strategy.</p>
+          <div class="proj-impact"><div class="proj-impact-title">Impact</div><div class="impact-row"><div><div class="impact-num" id="p2-i1n">248K</div><div class="impact-lab" id="p2-i1l">Sends tracked</div></div><div><div class="impact-num" id="p2-i2n">97.1%</div><div class="impact-lab" id="p2-i2l">Delivery rate</div></div><div><div class="impact-num" id="p2-i3n">8.3%</div><div class="impact-lab" id="p2-i3l">Click rate</div></div></div></div>
+        </div>
+        <div class="proj-right">
+          <div class="dash-frame">
+            <div class="dash-topbar"><div class="dash-dots"><div class="dash-dot" style="background:#FF5F56"></div><div class="dash-dot" style="background:#FFBD2E"></div><div class="dash-dot" style="background:#27C93F"></div></div><div class="dash-label">SMS Analytics Dashboard — MFS Program</div></div>
+            <div class="dash-body">
+              <div class="sms-kpis">
+                <div class="sms-kpi"><div class="sms-kpi-label">Total Sends</div><div class="sms-kpi-val">248.4K</div><div class="sms-kpi-trend trend-up">▲ +12% MOM</div></div>
+                <div class="sms-kpi"><div class="sms-kpi-label">Delivery Rate</div><div class="sms-kpi-val" style="color:var(--teal-m)">97.1%</div><div class="sms-kpi-trend trend-up">▲ Strong</div></div>
+                <div class="sms-kpi"><div class="sms-kpi-label">Bounce Rate</div><div class="sms-kpi-val">2.9%</div><div class="sms-kpi-trend trend-up">▼ −0.4pp MOM</div></div>
+                <div class="sms-kpi"><div class="sms-kpi-label">Click Rate</div><div class="sms-kpi-val" style="color:var(--teal-m)">8.3%</div><div class="sms-kpi-trend trend-up">▲ +1.1pp MOM</div></div>
+                <div class="sms-kpi"><div class="sms-kpi-label">Unique Clicks</div><div class="sms-kpi-val">6.7%</div><div class="sms-kpi-trend trend-up">▲ +0.8pp</div></div>
+                <div class="sms-kpi"><div class="sms-kpi-label">Double Opt-In</div><div class="sms-kpi-val">62.4%</div><div class="sms-kpi-trend" style="color:rgba(255,255,255,.3)">31,200 subs</div></div>
+              </div>
+              <div class="sms-funnel"><div class="sms-funnel-title">SMS Engagement Funnel · Jan–Apr 2025</div>
+                <div class="sf-step"><div class="sf-label">Sends</div><div class="sf-bwrap"><div class="sf-bar" style="width:100%;background:rgba(94,207,191,.6);color:#fff">248,400</div></div><div class="sf-num">100%</div></div>
+                <div class="sf-step"><div class="sf-label">Delivered</div><div class="sf-bwrap"><div class="sf-bar" style="width:97%;background:rgba(94,207,191,.5);color:#fff">241,100</div></div><div class="sf-num">97.1%</div></div>
+                <div class="sf-step"><div class="sf-label">Total Clicks</div><div class="sf-bwrap"><div class="sf-bar" style="width:8.3%;background:rgba(245,166,35,.7);color:#fff">20K</div></div><div class="sf-num">8.3%</div></div>
+                <div class="sf-step"><div class="sf-label">Unique Clicks</div><div class="sf-bwrap"><div class="sf-bar" style="width:6.7%;background:rgba(245,166,35,.55)"></div></div><div class="sf-num">6.7%</div></div>
+                <div class="sf-step"><div class="sf-label">Survey Response</div><div class="sf-bwrap"><div class="sf-bar" style="width:6.1%;background:rgba(94,207,191,.35)"></div></div><div class="sf-num">6.1%</div></div>
+              </div>
+              <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px">
+                <div class="sms-funnel-title" style="margin-bottom:8px">CTA Performance by Journey</div>
+                <table class="sms-table"><thead><tr><th>Journey</th><th>SMS</th><th>Click Rate</th><th>Opt-In</th></tr></thead><tbody>
+                  <tr><td>MFS Welcome</td><td>Welcome SMS 1</td><td class="hl">12.4%</td><td><span class="sms-badge sb-d">Double</span></td></tr>
+                  <tr><td>Renewal Nudge</td><td>Renewal Reminder</td><td class="hl">9.1%</td><td><span class="sms-badge sb-d">Double</span></td></tr>
+                  <tr><td>MFS Winback</td><td>Winback Offer</td><td>7.2%</td><td><span class="sms-badge sb-s">Single</span></td></tr>
+                  <tr><td>Survey Flow</td><td>Satisfaction Check</td><td>4.8%</td><td><span class="sms-badge" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.35)">Null</span></td></tr>
+                  <tr><td>App Onboarding</td><td>Download Push</td><td>5.9%</td><td><span class="sms-badge sb-d">Double</span></td></tr>
+                </tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wproject" id="proj-mfs">
+      <div class="proj-layout">
+        <div>
+          <div class="proj-tags-row"><span class="ptag pt-teal">Tableau</span><span class="ptag pt-navy">Email Analytics</span><span class="ptag pt-amber">App Activation</span></div>
+          <div class="proj-title" id="p3-title">MFS App Activation<br>Daily Performance Dashboard</div>
+          <div class="proj-sub" id="p3-sub">328K users · FSL2 & FSL3 journeys · Single source of truth</div>
+          <p class="proj-desc" id="p3-desc">Built the Tableau dashboard tracking daily email sends, opens, clicks, and app onboarding across two patient journey programs. Connected SFMC, Salesforce CRM, and AWS Redshift into a single daily-refreshed view that became the program's executive reporting layer.</p>
+          <div class="proj-impact"><div class="proj-impact-title">Impact</div><div class="impact-row"><div><div class="impact-num" id="p3-i1n">36M+</div><div class="impact-lab" id="p3-i1l">Emails tracked</div></div><div><div class="impact-num" id="p3-i2n">54%</div><div class="impact-lab" id="p3-i2l">Avg open rate</div></div><div><div class="impact-num" id="p3-i3n">98.6%</div><div class="impact-lab" id="p3-i3l">Delivery rate</div></div></div></div>
+        </div>
+        <div class="proj-right">
+          <div class="dash-frame">
+            <div class="dash-topbar"><div class="dash-dots"><div class="dash-dot" style="background:#FF5F56"></div><div class="dash-dot" style="background:#FFBD2E"></div><div class="dash-dot" style="background:#27C93F"></div></div><div class="dash-label">MFS App Activation · Daily Performance</div></div>
+            <div class="dash-body">
+              <div class="mfs-header"><div class="mfs-logo">🦋 My FreeStyle</div><div class="mfs-dates">Start: 5/29/2024 · Current: 3/24/2025</div></div>
+              <div class="mfs-kpis">
+                <div class="mfs-kpi"><div class="mfs-kpi-label">Total Entered</div><div class="mfs-kpi-val">328,565</div><div class="mfs-kpi-sub">▲ 1.29% — Last 24 hrs: 324,321</div></div>
+                <div class="mfs-kpi"><div class="mfs-kpi-label">Onboarded to App</div><div class="mfs-kpi-val" style="color:var(--teal-m)">2,686</div><div class="mfs-kpi-sub">▲ 0.74% — Last 24 hrs: 2,666</div></div>
+                <div class="mfs-kpi"><div class="mfs-kpi-label">FSL2 Sends</div><div class="mfs-kpi-val">64,188</div><div class="mfs-kpi-sub" style="color:rgba(255,255,255,.3)">Entered: 64,997</div></div>
+                <div class="mfs-kpi"><div class="mfs-kpi-label">FSL3 Sends</div><div class="mfs-kpi-val">261,603</div><div class="mfs-kpi-sub" style="color:rgba(255,255,255,.3)">Entered: 263,568</div></div>
+              </div>
+              <div class="mfs-funnel"><div class="mfs-funnel-title">Overall Funnel · FSL2 & FSL3</div>
+                <div class="mfs-fstep"><div class="mfs-flabel">Users Targeted</div><div class="mfs-fbwrap"><div class="mfs-fbar" style="width:100%;background:rgba(94,207,191,.6);color:#fff">328,565</div></div><div class="mfs-fnum">100%</div></div>
+                <div class="mfs-fstep"><div class="mfs-flabel">Email Delivered</div><div class="mfs-fbwrap"><div class="mfs-fbar" style="width:94%;background:rgba(94,207,191,.5);color:#fff">310,403</div></div><div class="mfs-fnum">94.5%</div></div>
+                <div class="mfs-fstep"><div class="mfs-flabel">Unique Opens</div><div class="mfs-fbwrap"><div class="mfs-fbar" style="width:54%;background:rgba(94,207,191,.4);color:#fff">166,412 · 54%</div></div><div class="mfs-fnum">54%</div></div>
+                <div class="mfs-fstep"><div class="mfs-flabel">Total Clicks</div><div class="mfs-fbwrap"><div class="mfs-fbar" style="width:18%;background:rgba(245,166,35,.65);color:#fff">30,129</div></div><div class="mfs-fnum">18%</div></div>
+                <div class="mfs-fstep"><div class="mfs-flabel">Onboarded to App</div><div class="mfs-fbwrap"><div class="mfs-fbar" style="width:0.8%;background:rgba(220,80,60,.7)"></div></div><div class="mfs-fnum" style="color:#F08080">2,686</div></div>
+              </div>
+              <div class="mfs-table-wrap"><div class="sms-funnel-title" style="margin-bottom:7px">Journey KPIs</div>
+                <table class="mfs-table"><thead><tr><th>Journey</th><th>Delivery</th><th>Open Rate</th><th>CTOR</th><th>Unsub</th></tr></thead><tbody>
+                  <tr><td>FSL2 App Activation</td><td>93.40%</td><td style="color:var(--teal-m)">51.10%</td><td>14.97%</td><td>0.31%</td></tr>
+                  <tr><td>FSL3 App Activation</td><td>95.74%</td><td style="color:var(--teal-m)">54.21%</td><td>18.81%</td><td>0.26%</td></tr>
+                </tbody></table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wproject" id="proj-auto">
+      <div class="proj-layout">
+        <div>
+          <div class="proj-tags-row"><span class="ptag pt-teal">Tableau Prep</span><span class="ptag pt-navy">SQL</span><span class="ptag pt-amber">Automation</span></div>
+          <div class="proj-title" id="p4-title">Reporting Automation<br>2 Weeks → 1 Day</div>
+          <div class="proj-sub" id="p4-sub">Tableau Prep Builder · Parameterized SQL · Scheduled extracts</div>
+          <p class="proj-desc" id="p4-desc">Transformed manual monthly/quarterly reporting into a fully automated overnight pipeline. Multi-source data model connecting SFMC, Salesforce CRM, and AWS Redshift. Also built the SQL naming taxonomy standardization delivering a $50K efficiency gain.</p>
+          <div class="proj-impact"><div class="proj-impact-title">Impact</div><div class="impact-row"><div><div class="impact-num" id="p4-i1n">93%</div><div class="impact-lab" id="p4-i1l">Time reduction</div></div><div><div class="impact-num" id="p4-i2n">$50K</div><div class="impact-lab" id="p4-i2l">Efficiency gain</div></div><div><div class="impact-num" id="p4-i3n">50+</div><div class="impact-lab" id="p4-i3l">Campaigns automated</div></div></div></div>
+        </div>
+        <div class="proj-right">
+          <div class="dash-frame"><div class="dash-topbar"><div class="dash-dots"><div class="dash-dot" style="background:#FF5F56"></div><div class="dash-dot" style="background:#FFBD2E"></div><div class="dash-dot" style="background:#27C93F"></div></div><div class="dash-label">Reporting Pipeline Architecture</div></div>
+            <div class="dash-body"><div class="auto-vis">
+              <div class="auto-before-after">
+                <div class="auto-box"><div class="auto-num" style="color:#F08080">2 wks</div><div class="auto-lbl">Before</div><div class="auto-sublbl">Manual, error-prone</div></div>
+                <div class="auto-arrow">→</div>
+                <div class="auto-box"><div class="auto-num" style="color:var(--teal-m)">1 day</div><div class="auto-lbl">After</div><div class="auto-sublbl">Fully automated</div></div>
+              </div>
+              <div class="auto-stack">
+                <div style="font-size:.62rem;font-weight:500;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Automated Pipeline Steps</div>
+                <div class="auto-step"><div class="auto-step-num">1</div><div class="auto-step-text">SFMC data extensions → SFTP export (daily, automated)</div><div class="auto-step-tag">SFMC</div></div>
+                <div class="auto-step"><div class="auto-step-num">2</div><div class="auto-step-text">Tableau Prep Builder scheduled extract joins all sources</div><div class="auto-step-tag">Prep Builder</div></div>
+                <div class="auto-step"><div class="auto-step-num">3</div><div class="auto-step-text">Parameterized SQL auto-filters by journey, date, segment</div><div class="auto-step-tag">SQL</div></div>
+                <div class="auto-step"><div class="auto-step-num">4</div><div class="auto-step-text">Standardized data model refreshes — all dashboards update</div><div class="auto-step-tag">Tableau Server</div></div>
+                <div class="auto-step"><div class="auto-step-num">5</div><div class="auto-step-text">Executive report ready by 9am — zero manual steps</div><div class="auto-step-tag">✓ Done</div></div>
+              </div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="s-inner">
+    <div class="s-label">Technical Toolkit</div>
+    <h2 class="s-title">What I work with</h2>
+    <div class="skills-grid reveal">
+      <div class="sk-card"><div class="sk-icon">📊</div><div class="sk-title">Analytics & BI</div><div class="sk-pills"><span class="sk-pill">Tableau Desktop</span><span class="sk-pill">Tableau Server</span><span class="sk-pill">Tableau Prep Builder</span><span class="sk-pill">SAP Analytics Cloud</span><span class="sk-pill">Power BI</span><span class="sk-pill">Looker</span></div></div>
+      <div class="sk-card"><div class="sk-icon">🗄️</div><div class="sk-title">Data & Engineering</div><div class="sk-pills"><span class="sk-pill">SQL (ETL)</span><span class="sk-pill">Data Modeling</span><span class="sk-pill">Bitbucket</span><span class="sk-pill">Python</span><span class="sk-pill">AWS Redshift</span><span class="sk-pill">SAP HANA</span><span class="sk-pill">R</span></div></div>
+      <div class="sk-card"><div class="sk-icon">📧</div><div class="sk-title">Marketing Platforms</div><div class="sk-pills"><span class="sk-pill">Salesforce Marketing Cloud</span><span class="sk-pill">Salesforce CRM</span><span class="sk-pill">MCI</span><span class="sk-pill">SFTP Automation</span></div><div class="cert">🏅 SFMC Intelligence · 2024</div><br><div class="cert">🏅 Data Cloud Consultant · 2024</div></div>
+      <div class="sk-card"><div class="sk-icon">🛠️</div><div class="sk-title">Methods & Tools</div><div class="sk-pills"><span class="sk-pill">Propensity Matching</span><span class="sk-pill">A/B Testing</span><span class="sk-pill">Excel VBA</span><span class="sk-pill">Power Query</span><span class="sk-pill">Jira</span><span class="sk-pill">SPSS</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="experience">
+  <div class="s-inner">
+    <div class="s-label">Career</div>
+    <h2 class="s-title">Where I've delivered</h2>
+    <div class="exp-tl">
+      <div class="exp-item reveal"><div class="exp-meta"><span class="exp-co">Healthcare & Medical Devices — Enterprise Program</span><span class="exp-role">Business Analyst (via Sumeru Consulting)</span><span class="exp-date">May 2024 – May 2026</span></div>
+        <ul class="exp-buls">
+          <li>Architected <strong>end-to-end Tableau dashboards</strong> via Tableau Prep Builder ETL across SFMC, Salesforce CRM and AWS Redshift — cutting executive reporting time by <strong>50%</strong> across 50+ global campaigns</li>
+          <li>Built <strong>centralized SQL query repository</strong> in Bitbucket with AI-assisted query generation layer — reducing ad hoc query turnaround across the analytics team</li>
+          <li>Led <strong>email naming taxonomy standardization</strong> enabling automated keyword extraction — eliminating manual errors and delivering a <strong>$50K efficiency gain</strong></li>
+          <li>Engineered <strong>automated QA validation</strong> across SFMC, EC2, and Salesforce CRM — adopted as standard pre-client handoff protocol</li>
+          <li>Transformed monthly reporting from a <strong>2-week manual process to a 1-day automated pipeline</strong></li>
+        </ul>
+      </div>
+      <div class="exp-item reveal"><div class="exp-meta"><span class="exp-co">SAP</span><span class="exp-role">Business Analyst</span><span class="exp-date">May 2023 – May 2024</span></div>
+        <ul class="exp-buls">
+          <li>Designed BI dashboards in <strong>Tableau and SAP Analytics Cloud</strong> for sales funnel and pricing analytics — saving 20+ hours/month</li>
+          <li>Automated marketing reporting using SQL, VBA, and Power Query — reducing cycle time by <strong>15%</strong></li>
+        </ul>
+      </div>
+      <div class="exp-item reveal"><div class="exp-meta"><span class="exp-co">Nestlé</span><span class="exp-role">Business Analyst</span><span class="exp-date">Jul 2021 – Sep 2022</span></div>
+        <ul class="exp-buls">
+          <li>Built <strong>Tableau dashboards with quantitative pricing models</strong> — reducing market response time by 25%</li>
+          <li>Multi-channel financial analysis using SQL and Power BI — boosting content-driven traffic by 20%</li>
+        </ul>
+      </div>
+      <div class="exp-item reveal"><div class="exp-meta"><span class="exp-co">Ernst & Young</span><span class="exp-role">Marketing Analyst</span><span class="exp-date">Jan 2020 – Oct 2020</span></div>
+        <ul class="exp-buls">
+          <li>Financial models for a <strong>$37B brewery client</strong> — excise duty impact analysis and pricing strategy</li>
+          <li>Monthly P&L, Balance Sheet, Cash Flow statements contributing to a 20% increase in investor confidence</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="s-inner">
+    <div class="s-label">Let's Connect</div>
+    <h2 class="c-title" id="c-title">I'd love to hear what you're building.</h2>
+    <p class="c-sub" id="c-sub">Whether you need someone who can own analytics end-to-end, build a measurement framework for a new program, or just talk data strategy — I'm open to it.</p>
+    <div class="c-links">
+      <a class="c-link cp" id="contact-email-link" href="mailto:sjain6576@gmail.com">✉️ <span id="contact-email-text">sjain6576@gmail.com</span></a>
+      <a class="c-link" id="contact-linkedin-link" href="https://linkedin.com/in/snehaj18" target="_blank">💼 LinkedIn</a>
+      <a class="c-link" id="contact-phone-link" href="tel:8572476681">📞 <span id="contact-phone-text">(857) 247-6681</span></a>
+    </div>
+  </div>
+</section>
+
+<footer>© 2026 Sneha Jain · snehajain18.github.io · Built with intention, deployed for free</footer>
+
+<!-- ═══════════════════════════════════════════════
+     EDITOR LOGIC
+═══════════════════════════════════════════════════ -->
+<script>
+let editMode = false;
+let photoDataURL = null;
+
+// Project data store
+const projData = {
+  1: { title:'FSL3+ Voucher Journey\nEnd-to-End Funnel Analytics', sub:'Poll response correlation · Redemption tracking · Sensor activation', desc:'Designed and measured a multi-channel patient journey program. Built the funnel visibility layer mapping email engagement → poll response → pharmacy voucher redemption → sensor activation.', i1n:'+10.1pp', i1l:'Causal email lift', i2n:'371K', i2l:'Patients tracked', i3n:'65%', i3l:'Convert in 14 days' },
+  2: { title:'SMS Analytics Dashboard', sub:'MFS Program · 248K sends · Click-to-conversion tracking', desc:'Built the SMS performance intelligence layer — tracking sends, delivery, bounce, click-through, opt-in segmentation across 5 journey categories.', i1n:'248K', i1l:'Sends tracked', i2n:'97.1%', i2l:'Delivery rate', i3n:'8.3%', i3l:'Click rate' },
+  3: { title:'MFS App Activation\nDaily Performance Dashboard', sub:'328K users · FSL2 & FSL3 journeys · Single source of truth', desc:'Built the Tableau dashboard tracking daily email sends, opens, clicks, and app onboarding across two patient journey programs.', i1n:'36M+', i1l:'Emails tracked', i2n:'54%', i2l:'Avg open rate', i3n:'98.6%', i3l:'Delivery rate' },
+  4: { title:'Reporting Automation\n2 Weeks → 1 Day', sub:'Tableau Prep Builder · Parameterized SQL · Scheduled extracts', desc:'Transformed manual monthly/quarterly reporting into a fully automated overnight pipeline. Multi-source data model connecting SFMC, CRM, and Redshift.', i1n:'93%', i1l:'Time reduction', i2n:'$50K', i2l:'Efficiency gain', i3n:'50+', i3l:'Campaigns automated' }
+};
+let currentProj = 1;
+
+function toggleEdit() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  document.getElementById('edit-toggle').classList.toggle('active', editMode);
+  document.getElementById('toggle-label').textContent = editMode ? 'Editing…' : 'Edit Site';
+  document.getElementById('edit-panel').classList.toggle('open', editMode);
+}
+
+function closePanel() {
+  editMode = false;
+  document.body.classList.remove('edit-mode');
+  document.getElementById('edit-toggle').classList.remove('active');
+  document.getElementById('toggle-label').textContent = 'Edit Site';
+  document.getElementById('edit-panel').classList.remove('open');
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.ep-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.ep-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function syncField(fieldId, domId) {
+  const val = document.getElementById('f-' + fieldId).value;
+  const el = document.getElementById(domId);
+  if (!el) return;
+  // For h1, preserve em tag on last sentence fragment
+  if (fieldId === 'h1') {
+    const parts = val.split('.');
+    const last = parts.pop().trim();
+    el.innerHTML = parts.join('.') + (parts.length ? '. ' : '') + '<em>' + last + '</em>';
+  } else {
+    el.textContent = val;
+  }
+}
+
+function switchProjEdit(n) {
+  currentProj = parseInt(n);
+  const d = projData[currentProj];
+  document.getElementById('f-proj-title').value = d.title;
+  document.getElementById('f-proj-sub').value = d.sub;
+  document.getElementById('f-proj-desc').value = d.desc;
+  document.getElementById('f-imp1n').value = d.i1n;
+  document.getElementById('f-imp1l').value = d.i1l;
+  document.getElementById('f-imp2n').value = d.i2n;
+  document.getElementById('f-imp2l').value = d.i2l;
+  document.getElementById('f-imp3n').value = d.i3n;
+  document.getElementById('f-imp3l').value = d.i3l;
+}
+
+function syncProjField(field) {
+  const p = currentProj;
+  const val = document.getElementById('f-proj-' + field).value;
+  projData[p][field] = val;
+  const el = document.getElementById('p' + p + '-' + field);
+  if (el) el.textContent = val;
+}
+
+function syncProjImpact() {
+  const p = currentProj;
+  ['i1n','i1l','i2n','i2l','i3n','i3l'].forEach(k => {
+    const inp = document.getElementById('f-' + k);
+    if (!inp) return;
+    projData[p][k] = inp.value;
+    const el = document.getElementById('p' + p + '-' + k);
+    if (el) el.textContent = inp.value;
+  });
+}
+
+function syncContact() {
+  const email = document.getElementById('f-email').value;
+  const linkedin = document.getElementById('f-linkedin').value;
+  const phone = document.getElementById('f-phone').value;
+  document.getElementById('contact-email-text').textContent = email;
+  document.getElementById('contact-email-link').href = 'mailto:' + email;
+  document.getElementById('nav-email-link').href = 'mailto:' + email;
+  document.getElementById('contact-linkedin-link').href = linkedin;
+  document.getElementById('contact-phone-text').textContent = phone;
+  document.getElementById('contact-phone-link').href = 'tel:' + phone.replace(/\D/g,'');
+}
+
+// Tag editor
+function addTag(e) {
+  if (e.key !== 'Enter') return;
+  const inp = document.getElementById('tag-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  const pill = document.createElement('span');
+  pill.className = 'tag-pill';
+  pill.innerHTML = val + ' <button onclick="removeTag(this)">×</button>';
+  document.getElementById('tags-editor').insertBefore(pill, inp);
+  inp.value = '';
+  syncTagsToPage();
+}
+
+function removeTag(btn) {
+  btn.parentElement.remove();
+  syncTagsToPage();
+}
+
+function syncTagsToPage() {
+  const pills = document.querySelectorAll('#tags-editor .tag-pill');
+  const row = document.getElementById('tag-row-live');
+  row.innerHTML = '';
+  pills.forEach(p => {
+    const span = document.createElement('span');
+    span.className = 'atag';
+    span.textContent = p.textContent.replace('×','').trim();
+    row.appendChild(span);
+  });
+}
+
+// Photo upload
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    photoDataURL = e.target.result;
+    const preview = document.getElementById('photo-preview');
+    preview.src = photoDataURL;
+    preview.style.display = 'block';
+    const avatarPhoto = document.getElementById('avatar-photo');
+    avatarPhoto.src = photoDataURL;
+    avatarPhoto.style.display = 'block';
+    document.querySelector('.avatar-emoji').style.display = 'none';
+    toast('Photo updated! ✓');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Toast
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// PROJECT TABS (portfolio)
+function showProject(id, btn) {
+  document.querySelectorAll('.wproject').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.wtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('proj-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// Scroll reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); });
+}, {threshold: 0.08});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// ── DOWNLOAD UPDATED HTML ────────────────────────────────
+function applyAndDownload() {
+  const btn = document.getElementById('save-btn');
+  btn.classList.add('saving');
+  btn.textContent = '⏳ Preparing download…';
+
+  // Capture all current DOM state into a clean HTML file
+  const clone = document.documentElement.cloneNode(true);
+
+  // Remove editor UI from the clone
+  clone.querySelector('#editor-bar').remove();
+  clone.querySelector('#edit-panel').remove();
+  clone.querySelector('#toast').remove();
+
+  // Remove edit-mode class
+  clone.querySelector('body').classList.remove('edit-mode');
+
+  // Remove all editor-related style blocks & script
+  clone.querySelectorAll('style').forEach(s => {
+    if (s.textContent.includes('#editor-bar') || s.textContent.includes('edit-toggle')) s.remove();
+  });
+
+  // Embed photo if uploaded
+  if (photoDataURL) {
+    const img = clone.querySelector('#avatar-photo');
+    if (img) { img.src = photoDataURL; img.style.display = 'block'; }
+    const emoji = clone.querySelector('.avatar-emoji');
+    if (emoji) emoji.style.display = 'none';
+  }
+
+  // Remove editor scripts (last script tag)
+  const scripts = clone.querySelectorAll('script');
+  scripts[scripts.length - 1].remove();
+
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'index.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  setTimeout(() => {
+    btn.classList.remove('saving');
+    btn.textContent = '⬇ Save & Download Updated Site';
+    toast('Downloaded! Upload index.html to GitHub ✓');
+  }, 800);
+}
+</script>
+</body>
+</html>

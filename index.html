@@ -300,7 +300,7 @@ footer{background:#060f1e;text-align:center;padding:1.4rem;font-size:.72rem;colo
   <div class="hero-inner">
     <div>
       <div class="hero-badge"><span class="hero-dot"></span><span id="hero-badge-txt">Los Angeles, CA</span></div>
-      <h1 class="hero-h1" id="hero-h1-el"> <em> Raw data doesn't move strategy. </em>I do.By building the systems that turn noise into decisions that land.</h1>
+      <h1 class="hero-h1" id="hero-h1-el">Raw data doesn't move strategy. I do.<br/><em>By building the systems that turn noise into decisions that land.</em></h1>
       <p class="hero-p" id="hero-p-el">I design dashboards, measurement frameworks, and automated pipelines that give strategy teams the evidence to act — not just the charts to present.</p>
       <div class="hero-btns">
         <a href="#work" class="btn-p">See My Work →</a>
@@ -702,10 +702,9 @@ footer{background:#060f1e;text-align:center;padding:1.4rem;font-size:.72rem;colo
 <footer>© 2026 Sneha Jain · snehajain18.github.io</footer>
 
 <script>
-// ── SECRET PASSWORD ──
 const SECRET='sneha2026';
 let typed='';
-document.addEventListener('keydown',e=>{
+document.addEventListener('keydown',function(e){
   if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;
   typed+=e.key.toLowerCase();
   if(typed.length>SECRET.length+2)typed=typed.slice(-SECRET.length-2);
@@ -713,70 +712,192 @@ document.addEventListener('keydown',e=>{
 });
 
 let edActive=false,resumeDataURL=null,photoDataURL=null;
-function edToggle(){edActive=!edActive;document.body.classList.toggle('edit-on',edActive);document.getElementById('__ed-btn').classList.toggle('on',edActive);document.getElementById('__ed-lbl').textContent=edActive?'Editing…':'Edit Site';document.getElementById('__ed-panel').classList.toggle('open',edActive);if(edActive)edPopulate();}
-function edOpen(){edActive=true;document.body.classList.add('edit-on');document.getElementById('__ed-btn').classList.add('on');document.getElementById('__ed-lbl').textContent='Editing…';document.getElementById('__ed-panel').classList.add('open');edPopulate();}
+
+function edToggle(){edActive=!edActive;document.body.classList.toggle('edit-on',edActive);document.getElementById('__ed-btn').classList.toggle('on',edActive);document.getElementById('__ed-lbl').textContent=edActive?'Editing...':'Edit Site';document.getElementById('__ed-panel').classList.toggle('open',edActive);if(edActive)edPopulate();}
+function edOpen(){edActive=true;document.body.classList.add('edit-on');document.getElementById('__ed-btn').classList.add('on');document.getElementById('__ed-lbl').textContent='Editing...';document.getElementById('__ed-panel').classList.add('open');edPopulate();}
 function edClose(){edActive=false;document.body.classList.remove('edit-on');document.getElementById('__ed-btn').classList.remove('on');document.getElementById('__ed-lbl').textContent='Edit Site';document.getElementById('__ed-panel').classList.remove('open');}
 
 function edPopulate(){
-  const g=id=>document.getElementById(id);
-  g('ef-badge').value=g('hero-badge-txt').textContent;
-  g('ef-h1').value=g('hero-h1-el').innerText;
-  g('ef-herop').value=g('hero-p-el').textContent;
-  g('ef-name').value=g('avatar-name-el').textContent;
-  g('ef-namesub').value=g('avatar-sub-el').textContent;
-  g('ef-ap1').value=g('about-p1-el').innerText;
-  g('ef-ap2').value=g('about-p2-el').innerText;
-  g('ef-ap3').value=g('about-p3-el').innerText;
-  g('ef-email').value=g('c-email-txt').textContent;
-  g('ef-li').value=g('c-li-a').href;
-  g('ef-phone').value=g('c-phone-txt').textContent;
-  g('ef-ctitle').value=g('c-title-el').textContent;
-  g('ef-emoji').value=document.querySelector('.avatar-emoji').textContent;
+  function g(id){return document.getElementById(id);}
+  function safe(fn){try{fn();}catch(e){}}
+  safe(function(){g('ef-badge').value=g('hero-badge-txt').textContent;});
+  safe(function(){g('ef-h1').value=g('hero-h1-el').innerText;});
+  safe(function(){g('ef-herop').value=g('hero-p-el').textContent;});
+  safe(function(){g('ef-name').value=g('avatar-name-el').textContent;});
+  safe(function(){g('ef-namesub').value=g('avatar-sub-el').textContent;});
+  safe(function(){g('ef-ap1').value=g('about-p1-el').innerText;});
+  safe(function(){g('ef-ap2').value=g('about-p2-el').innerText;});
+  safe(function(){g('ef-ap3').value=g('about-p3-el').innerText;});
+  safe(function(){g('ef-email').value=g('c-email-txt').textContent;});
+  safe(function(){g('ef-li').value=g('c-li-a').href;});
+  safe(function(){g('ef-phone').value=g('c-phone-txt').textContent;});
+  safe(function(){g('ef-ctitle').value=g('c-title-el').textContent;});
+  safe(function(){g('ef-emoji').value=document.querySelector('.avatar-emoji').textContent;});
+  loadSkillsEditor();
 }
-function edTab(id,btn){document.querySelectorAll('.epsec').forEach(s=>s.classList.remove('on'));document.querySelectorAll('.eptab').forEach(t=>t.classList.remove('on'));document.getElementById('esec-'+id).classList.add('on');btn.classList.add('on');}
-function eLive(fid,did){const v=document.getElementById(fid).value;const el=document.getElementById(did);if(el)el.textContent=v;}
+
+function edTab(id,btn){
+  document.querySelectorAll('.epsec').forEach(function(s){s.classList.remove('on');});
+  document.querySelectorAll('.eptab').forEach(function(t){t.classList.remove('on');});
+  document.getElementById('esec-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+function eLive(fid,did){
+  var v=document.getElementById(fid).value;
+  var el=document.getElementById(did);
+  if(el)el.textContent=v;
+}
+
 function eLiveH1(){
-  const v=document.getElementById('ef-h1').value;
-  const el=document.getElementById('hero-h1-el');
-  const parts=v.split('.');const last=parts.pop().trim();
-  el.innerHTML=parts.join('.')+(parts.length?'. ':'')+' <em>'+last+'</em>';
+  var v=document.getElementById('ef-h1').value;
+  var el=document.getElementById('hero-h1-el');
+  var lines=v.split('\n');
+  if(lines.length>=2){
+    el.innerHTML=lines[0]+'<br/><em>'+lines.slice(1).join(' ')+'</em>';
+  } else {
+    el.innerHTML=v;
+  }
 }
+
 function eContact(){
-  const email=document.getElementById('ef-email').value;
-  const li=document.getElementById('ef-li').value;
-  const phone=document.getElementById('ef-phone').value;
-  document.getElementById('c-email-txt').textContent=email;
-  document.getElementById('c-email-a').href='mailto:'+email;
-  document.getElementById('nav-email-a').href='mailto:'+email;
-  document.getElementById('c-li-a').href=li;
-  document.getElementById('c-phone-txt').textContent=phone;
-  document.getElementById('c-phone-a').href='tel:'+phone.replace(/\D/g,'');
+  function safe(fn){try{fn();}catch(e){}}
+  var email=document.getElementById('ef-email').value;
+  var li=document.getElementById('ef-li').value;
+  var phone=document.getElementById('ef-phone').value;
+  safe(function(){document.getElementById('c-email-txt').textContent=email;document.getElementById('c-email-a').href='mailto:'+email;});
+  safe(function(){document.getElementById('nav-email-a').href='mailto:'+email;});
+  safe(function(){document.getElementById('c-li-a').href=li;});
+  safe(function(){document.getElementById('c-phone-txt').textContent=phone;document.getElementById('c-phone-a').href='tel:'+phone.replace(/[^0-9]/g,'');});
 }
-function ePhoto(inp){const file=inp.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{photoDataURL=e.target.result;document.getElementById('ef-photo-prev').src=photoDataURL;document.getElementById('ef-photo-prev').style.display='block';document.getElementById('avatar-photo').src=photoDataURL;document.getElementById('avatar-photo').style.display='block';document.querySelector('.avatar-emoji').style.display='none';eToast('Photo updated ✓');};r.readAsDataURL(file);}
-function eResume(inp){const file=inp.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{resumeDataURL=e.target.result;document.getElementById('ef-resume-status').textContent='✓ Loaded: '+file.name;eToast('Resume loaded ✓');};r.readAsDataURL(file);}
-function downloadResume(){if(!resumeDataURL){eToast('Open editor (type sneha2026) → Resume tab → upload PDF first');return;}const a=document.createElement('a');a.href=resumeDataURL;a.download='Sneha_Jain_Resume.pdf';a.click();}
-function eToast(msg){const t=document.getElementById('__toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 
-// Project tabs
-function showProj(id,btn){document.querySelectorAll('.wproject').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.wtab').forEach(t=>t.classList.remove('on'));document.getElementById('proj-'+id).classList.add('on');btn.classList.add('on');}
+function ePhoto(inp){
+  var file=inp.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    photoDataURL=e.target.result;
+    try{document.getElementById('ef-photo-prev').src=photoDataURL;document.getElementById('ef-photo-prev').style.display='block';}catch(ex){}
+    try{document.getElementById('avatar-photo').src=photoDataURL;document.getElementById('avatar-photo').style.display='block';}catch(ex){}
+    try{document.querySelector('.avatar-emoji').style.display='none';}catch(ex){}
+    eToast('Photo updated');
+  };
+  r.readAsDataURL(file);
+}
 
-// Scroll reveal
-const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')});},{threshold:.08});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+function eResume(inp){
+  var file=inp.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    resumeDataURL=e.target.result;
+    try{document.getElementById('ef-resume-status').textContent='Loaded: '+file.name;}catch(ex){}
+    eToast('Resume loaded — download site to embed it');
+  };
+  r.readAsDataURL(file);
+}
 
-// Download
+function downloadResume(){
+  if(!resumeDataURL){
+    eToast('Type sneha2026 anywhere to open editor, then go to Resume tab');
+    return;
+  }
+  var a=document.createElement('a');
+  a.href=resumeDataURL;
+  a.download='Sneha_Jain_Resume.pdf';
+  a.click();
+}
+
+function eToast(msg){
+  var t=document.getElementById('__toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+function loadSkillsEditor(){
+  var cards=document.querySelectorAll('.sk-card');
+  var container=document.getElementById('skills-editor-cards');
+  if(!container)return;
+  container.innerHTML='';
+  cards.forEach(function(card,i){
+    var titleEl=card.querySelector('.sk-title');
+    var title=titleEl?titleEl.textContent:'Card '+(i+1);
+    var pills=Array.from(card.querySelectorAll('.sk-pill')).map(function(p){return p.textContent;});
+    var div=document.createElement('div');
+    div.style.cssText='background:var(--slate-l);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px';
+    var pillsHTML=pills.map(function(p,j){
+      return '<span style="display:inline-flex;align-items:center;gap:3px;background:var(--white);border:1px solid var(--border);border-radius:100px;padding:2px 8px;font-size:.68rem;color:var(--slate)">'+p+'<button onclick="removeSkillPill('+i+','+j+')" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:.75rem;padding:0;margin-left:2px">x</button></span>';
+    }).join('');
+    div.innerHTML='<div style="font-size:.7rem;font-weight:600;color:var(--navy);margin-bottom:6px">'+title+'</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px" id="pill-wrap-'+i+'">'+pillsHTML+'</div>'
+      +'<div style="display:flex;gap:5px">'
+      +'<input id="pill-inp-'+i+'" placeholder="Add skill..." style="flex:1;font-family:var(--body);font-size:.75rem;border:1px solid var(--border);border-radius:6px;padding:4px 8px;outline:none" onkeydown="if(event.key===\'Enter\'){addSkillPill('+i+');event.preventDefault();}" />'
+      +'<button onclick="addSkillPill('+i+')" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.72rem;cursor:pointer;font-family:var(--body)">Add</button>'
+      +'</div>';
+    container.appendChild(div);
+  });
+}
+
+function addSkillPill(cardIdx){
+  var inp=document.getElementById('pill-inp-'+cardIdx);
+  var val=inp.value.trim();if(!val)return;
+  var cards=document.querySelectorAll('.sk-card');
+  var card=cards[cardIdx];
+  var pillsWrap=card.querySelector('.sk-pills');
+  if(!pillsWrap)return;
+  var span=document.createElement('span');
+  span.className='sk-pill';span.textContent=val;
+  pillsWrap.appendChild(span);
+  inp.value='';
+  loadSkillsEditor();
+  eToast(val+' added');
+}
+
+function removeSkillPill(cardIdx,pillIdx){
+  var cards=document.querySelectorAll('.sk-card');
+  var card=cards[cardIdx];
+  var pills=card.querySelectorAll('.sk-pill');
+  if(pills[pillIdx])pills[pillIdx].remove();
+  loadSkillsEditor();
+}
+
+function showProj(id,btn){
+  document.querySelectorAll('.wproject').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.wtab').forEach(function(t){t.classList.remove('on');});
+  document.getElementById('proj-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+var obs=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});
+},{threshold:.08});
+document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
+
 function eDownload(){
-  const clone=document.documentElement.cloneNode(true);
-  ['__ed-bar','__ed-panel','__toast'].forEach(id=>{const el=clone.querySelector('#'+id);if(el)el.remove();});
+  var clone=document.documentElement.cloneNode(true);
+  ['__ed-bar','__ed-panel','__toast'].forEach(function(id){
+    var el=clone.querySelector('#'+id);if(el)el.remove();
+  });
   clone.querySelector('body').classList.remove('edit-on');
-  if(photoDataURL){const img=clone.querySelector('#avatar-photo');if(img){img.src=photoDataURL;img.style.display='block';}const emoji=clone.querySelector('.avatar-emoji');if(emoji)emoji.style.display='none';}
-  if(resumeDataURL){const scripts=clone.querySelectorAll('script');const last=scripts[scripts.length-1];if(last)last.textContent=last.textContent.replace('let resumeDataURL="data:application/pdf;base64,JVBERi0xLjQKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUiAvRjMgNCAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EgL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcgL05hbWUgL0YxIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKMyAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYS1Cb2xkIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMiAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EtT2JsaXF1ZSAvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZyAvTmFtZSAvRjMgL1N1YnR5cGUgL1R5cGUxIC9UeXBlIC9Gb250Cj4+CmVuZG9iago1IDAgb2JqCjw8Ci9Db250ZW50cyA5IDAgUiAvTWVkaWFCb3ggWyAwIDAgNjEyIDc5MiBdIC9QYXJlbnQgOCAwIFIgL1Jlc291cmNlcyA8PAovRm9udCAxIDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgL1RyYW5zIDw8Cgo+PiAKICAvVHlwZSAvUGFnZQo+PgplbmRvYmoKNiAwIG9iago8PAovUGFnZU1vZGUgL1VzZU5vbmUgL1BhZ2VzIDggMCBSIC9UeXBlIC9DYXRhbG9nCj4+CmVuZG9iago3IDAgb2JqCjw8Ci9BdXRob3IgKFwoYW5vbnltb3VzXCkpIC9DcmVhdGlvbkRhdGUgKEQ6MjAyNjA1MjkwMTA4NDIrMDAnMDAnKSAvQ3JlYXRvciAoXCh1bnNwZWNpZmllZFwpKSAvS2V5d29yZHMgKCkgL01vZERhdGUgKEQ6MjAyNjA1MjkwMTA4NDIrMDAnMDAnKSAvUHJvZHVjZXIgKFJlcG9ydExhYiBQREYgTGlicmFyeSAtIFwob3BlbnNvdXJjZVwpKSAKICAvU3ViamVjdCAoXCh1bnNwZWNpZmllZFwpKSAvVGl0bGUgKFwoYW5vbnltb3VzXCkpIC9UcmFwcGVkIC9GYWxzZQo+PgplbmRvYmoKOCAwIG9iago8PAovQ291bnQgMSAvS2lkcyBbIDUgMCBSIF0gL1R5cGUgL1BhZ2VzCj4+CmVuZG9iago5IDAgb2JqCjw8Ci9GaWx0ZXIgWyAvQVNDSUk4NURlY29kZSAvRmxhdGVEZWNvZGUgXSAvTGVuZ3RoIDM5NzEKPj4Kc3RyZWFtCkdhdUhOPkJlZGwmcTgwMVcvJHAoYzN1JjJKOk1vSzlRMzwmKW9qLmRTVEZdUU1ac2tnQy45IiRiaDQpUT9hVi90NzlDblljTEZKQjp0Jl8lWUouIystT2k7T3FWTWE8L3VKOic7Q0M6bmwoJUJIWlVOPXQlQiRFL0hEVGRUYnFAbD5bI0NtNF9DK2g8O1wsVkEuc3RDVENoTTBRXmZDWyhWVjkyUE49O1Q6MWVcOjxWX15CP1lEO1REb1YiTFxJU0o5RTIjVy1SRzhCLGhPOC5CbWc9LyNObiFuJkpdNnBKbj4idXAiRy1hPlJTXjFsNFlWP01gODUhVCopLGliKSNbYkxaKVlBbE4nUElIaklNJ1ArKiYiXFEqVURVQF8iJT8iLnRgSTNHQSNgVGtPKDJGWGo0SWdGbkxAakBrVzNAWlZlNltFKidbcy5kSEM+bFBiSiJIY2lpamFnOTxXZ1laYD9UOj1nLEJRdVpXKC5URS1VWGRsYjFSXShCaVRaLXFZaE9CKjZNM2k2RDZqXFhDI2tKa15QVGRyQl1gb2pEKl8vLUJoQzVCK0ZwYW80MCJiK0NfdDY6cTlRViokMHExOi9nZiVdSzZJMWQuSis2LSw8S2xYJlgvX2A1N2l0PzNfLEhSWzREU2ksPS9mJ15hTEtfSDsxSGxhWlhpa2pmSFNOTjdPUC49PnVAdTdAOTxKXVkvPjFfVCssaj1NOEdfPGV0OFJNSzxCZmQkIyZJVXAxX25SI1UsI2xTcCZSTHAhOTM1cFRkSGFQS1pTMmIoLzxINEpVVzlVKnNqTDJsTU1NUyVLZExQalY6MkJtJDEidD1ZaFc/U1YjbDVEZlxuWV1WTSVZLCY0XXEnK2RIRGFbZTgzXy1dbj03XElGMkFnPmA2K0VeXUZhJmc0SFxoJTc4ckMrKEpbUlktWFBZJi1eciNtV1wxUy9mS0skQkI+bUw8QDBNIiZyXyxgVVU1Xi4qMWwmPmomOHBVM0tGYToqZCtEUVUlMTpfdGtIUl0qKE4yP2s2ZUYjXW5QT0xDI0RfISE9K2B0TjBvXjw+WlEwL25bYD9EbltvWCUoSiUiVEJiaTVIWDpDY0hxSGVoTEpdOGw/V147Q19SSGJ1RDswLEw1J2hXbXVgQXVXdTpNbSd1bCdDU2ZWWGQrajA2UEQqYUZNQyFyNlgwSFA6aSIrMixfRGVuckNSSCloRSpuMiVUWCZSTy4vIlVEc01PcDJnXF5JRVcxIW5eSnVXLFNhSFkzP05gbj5vcFEkJC87NmlsUF1YWF46XjFdbScuZWsvXXReLFZQOUowcS1QMCcvSDllRkVtQ18iQScsYDJjNSk7JzsrYzx1XE9sTko3XGMsc29oLCgxJU03Z2VvNm5ydUdOWHA9cj5lNzc4VU9iKUlmbiJEZktNWzk5TmBtKVVARUpmSlNOLT8qSjA/NGlMYSVaWFpTOy40Yj1EcWZrZURWVFs+KFBtLGorbSctVU4jTyRSXzs0K0hocWJeZDIoZmVAPy5wbzZFN3JASiUiVW1bXU5VKWo+MWRtKU06UTNrZFByZTZZU2wiWTlcPz1rbF5hQiptXzFEQC1vVil0OExHVl5nO19VUF5tZUtJXUZBbz1cdEhIXV5EcyZYI2FNKUBkMUA2ZEs9UFE6TSk5Sy0zSCxpZGRHPWRsY0QuLmNhNnUudClZUy08TCtXLCtSVGhhZFdUISdCYmQnQm8tb2xIc1VHclhdSzpLOiRZcjpJWSpdW09WPiNlIUZ1UktRbjg0L1MlaGlLOGpxYURbZkJoWEpYVFFWUEFxKSU0VlViXXFoI048W0pLXC1vckNjViFZWilTL1ZEaC5LVmQ9LCFpTEZOa0QpMXE6bjpZdC1TKi4ucm9QRidFRDFrWUdlbyonWl86JzBPYlpASk9XaShmTmU0aFZjTithL08qN2AoY2Q8OThKKCgnK25XWS43RD4mU1ZMWTdJOTIiYi9CQDwvMXRHWHRDaWIoXC8/Tyo4ITonc2Voa01DOj1tXFQ5WGtcLzxXPjxRKnFuZTdpLVhcaF9faDlbLFxSP0wzbW9QYSpyPTVKMlomPkFWLmFPJkhBYStDKVkiU2w+XmorZ0NpclMyJ0VsJCleZHA6KSNKc2Q2JWsqNm80Oz02PCNBWzA2Viw9YyFyJmQwc2s7M2RxSytSTjhMVDM1PEtaMWpRWEAvSyxVUCMsNlZmK1hWa0VIRDRZOytcUTtxYEc+aWwuWiYwYW4kZS5PVjsvKG4jJyhFRTlfJnVyTXBlMWw4VyEhaG1IKW8wRzouQ1dWNylWWF1LV2ByYlk4OEJeUTNoTU1rcC8qRCxlLW1maWM5ZEpKQzolPCVjL0ZeWEMzU2wmXXBxXT1fREJCPyJgPjxhMDg9PCNBKTlsMkckcydQZyk1X2pqUihtJS9hdGgqdUZuIkVdPE9xJkgzOGRdV1NLc0w0R1RlXTUtIjdhMnQ3OVhzMEtANWVzPEpxWF5ILUtPRFEqaj4/ViRqMidYI24nTWVFWz9YIW1JN2ttNV5UQTJUJisvV1ZjSURMa11oPixCSlJFQkIjUyJdRyFXT244ZjwmWjJsa1dOYCYjbGA0P1lASGYiYyxmajAvaHQiZy5mYignbDEodWZbUFZYZDszJGFuV00mQWw7YT5GIlxuNjFBVSRDMT1yanElOFc6KWQpUWFbWUtcNllFSC1NPiU+TGMsKkgtJFtlYCFJKGZLcSFGaSFoTC5YLiMsWUtqb048XXB1YS1kWltlal5UPVJVbyYwXW4mUDVIYiJiNmVjTzhKOiZTUDNjZEpTP0BhRkEsK2N0VGMyOWxbSGgiPV1rTmwkbVJdNlcrQEdAbD9xMylzL2dyRmoySUpgLGU4cW8uLVw4S283Lm0hc24mOlJaMVNbYk40cjl1T2sqWFREUHJYKlhAZTc5dDBoWyk7K0AxRTlUMS82VGFLRk5PV1M2M28qViRrVyhGXz9ETiMlUXFSRz0sYFtTPVxMPyJcLF9ZIi4nNFZVPWU8OjVSbzw9byUoPkM0aEVNYFMjUlxqPFpHQSU7bEs/bSM+aFQ/azIyWWQ5Pk5gYiQvMlIyaShecWtYVVRQW0xxSSIlOzpSUkcibWZ1NllDcG1DUDx1IUg4MUc3NzNBLCEtJmdiNj8yR1pHWTYrLi9nKUtmPlhaYT4xW1xrN0tJbmkxNV5KaE0yQC5eO2lJdF9tO2ciaDciQW8zWXNFZkgzL2lbL1tiYSpTckJnR2w/YSc5NmtZN1hZO3RuJ1Vuays/KUIpckdVME1bT2VKIzNmb11EPm08MyI1UkgkJGRJQy90aDtUcU86PShPZGVmPSw1S1c8dXVlWj9hVj5nUm1FSjQmWE1OYCYvcWIrJ29qVDFmbyIjKGUhSVAzSEZZVF8hVUc+YTFIaGlXcTZLY0AzQFVCcThlTFJuKlVpYkxzXnRtOixLY1JBO1csaGRqb1tjQCxlYjAtIj5NTFY0QkdDIVppJFRNJHQzIzNRaiNVJDN1Z1AnXnAiOyIsSE1wTHVPZFBhLWstbUFDQjtHcTFPcSdRTEcpI2RNUG1XKkleQkQ3QSNfWjtpaFxZSW0iOV5BVG5QOklnVzddJiEka2xbLyVvZTBbWS9aY1MnWm86Z19DOlRlQ2MpMzlSQUwoMV8xSVchU0U0TSVENlwsRWUucVU2VkBLRDFTT1FtUy9Bbl07aSdYUCstWy86PWgjXjAhPlhXYUROcD84KCkyY3AzL0JHUyI+YnE1JUwhbVA7WlVIJTtsWmtPMl5HKTtEQiUmY00wOXFTLzBHbShOTEs0aC1CXSgkSTU3cUBLPDVXKWBUZilkUEpsUC00cixfTUxTb14sQTt0U1xTTDFWZGNcJCgyW2BbQzlHc1dhVkhhTGQqVW06WzZYQlUxSFdwMUtnN1I3KidDRjhkOys1ST1GOnQ+VDU8ZSJeUC4jUXMiKSZUPEFnQEhKUFgzalpFPl1zUjJrJS8zS0RMOmZNaFFDYFA9X0NKYCg4L2g6WyxsIyJHZi5CZWhhOm1yWCEoSShBXSlKXVtMRjA/dVxrSDFUL1pfKlBRNGhTJVxlazd0TW82OidkODgsc2xHIj9zZ18tc0oxUmNzLyFHSjorSXJnPHNgOz8mO1dBXCElPz9fPVlcX14nNiZccE5xSjcwS1lhdVdscm1QKGU8MUVXSHJpYGc5KGljVUZIMCM3MHVic2hQMTcsJzRmMEFDPF83YF4mSURcT2t0PGhjXzNxPzEnVU1kIUJJM0c/WDE9PCE2bWVTSjRfP0xNJCZORiNmWl4iIzJYS2hbKSwuMCQiRywiPDZcVUBQP0ImL0cnR1ZrZDBxP3BmODdGcFYzOTUiaCNRUEgsLlJTOF0rOHAsTzFRTWhUKm5KWFJfISgnY1tYZltCSSxMWTNhal9PQHAvJDo3VEVXUlNbRmo3P2BjOk5TWEddbW5ETmgyVjI8NVRUQkYlTD5dSmhnJypIVkIoRllSMzZeNW9lJyhJajQqY2U3ZWhQMW4pU04wPSlVXTNeZnJaKE5kXXUmKXNrdFZBcl5pT0IjQF9oJXNoMC1XOiQ7M2d0ajooKTpCWjdGZT5cRVVuJyxZKTlRJCRMJG8yXlUuPkdjWklkRnUkTDVCLVRrKGptK24uIlIyS2xqZ1QrKSd1ZiYmLWQkMi8kMW9fUW1EJ103bydnVF1jXHQwSVU5L2EnJFRZKDdpMDNWW1hVV1IvdUFGNlkqa1w5b0ROQkhpRWMqKCJqOEpnPyFZXD4/KjI4PDNGaWszXjwociwxdTw9NkdeaGpwb1ooTUI0clRLIUZDS21dbTwhRzFhc2BXX0YiM1VmaipSSW5cJTgmJ0ZwIkdQZkdudTNrLSFXVFxlbkZsXC83XWtuSEhtIV9DOE9wWmFWVT1wX3M6XGdjXm5eJ0UwYkdIbWdmN0xxMjYxKzA/dGordCxHWyhQa088WC9YSTNuLClPdUw9Oi1wcCpUVF8kYjUmXUNGUUEiYFpuPyheSGRxN2lkTGo8TzZaJ1hwU2ooRj5HRXEsb0gxL1M4Y05bVS1mTStaXDRZa1hoXS0lZT8hXHVLbT0vPk5KKXIoWG9RKTFhbU9GN1xhV15Ybm9wZyFvVVQnSyxRJSRXU1k0Ly1CXGpiOF82LDNsczsnb0ZyYS9uPiwwKjVqckRuLFZRWkVwcXRkTDVBJ0I9KixwN0tYNUtSa0o5QWtkNTIuNV0tMUIwLjxhODU/ajgiTkpiOi5oWGRIRlxzLW9ySWpJRmAwRmgyPV4lcmhpXkVFIn4+ZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgMTAKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDYxIDAwMDAwIG4gCjAwMDAwMDAxMTIgMDAwMDAgbiAKMDAwMDAwMDIxOSAwMDAwMCBuIAowMDAwMDAwMzMxIDAwMDAwIG4gCjAwMDAwMDA0NDYgMDAwMDAgbiAKMDAwMDAwMDYzOSAwMDAwMCBuIAowMDAwMDAwNzA3IDAwMDAwIG4gCjAwMDAwMDA5ODcgMDAwMDAgbiAKMDAwMDAwMTA0NiAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9JRCAKWzxlZDBjYTA5ZjVlM2VkNTU0ZTU5MzFkOTFiYmM0NDEzYj48ZWQwY2EwOWY1ZTNlZDU1NGU1OTMxZDkxYmJjNDQxM2I+XQolIFJlcG9ydExhYiBnZW5lcmF0ZWQgUERGIGRvY3VtZW50IC0tIGRpZ2VzdCAob3BlbnNvdXJjZSkKCi9JbmZvIDcgMCBSCi9Sb290IDYgMCBSCi9TaXplIDEwCj4+CnN0YXJ0eHJlZgo1MTA4CiUlRU9GCg=="','let resumeDataURL="'+resumeDataURL+'"');}
-  const html='<!DOCTYPE html>\n'+clone.outerHTML;
-  const blob=new Blob([html],{type:'text/html'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='index.html';a.click();URL.revokeObjectURL(a.href);
-  eToast('Downloaded! Upload to GitHub ✓');
+  if(photoDataURL){
+    var img=clone.querySelector('#avatar-photo');
+    if(img){img.src=photoDataURL;img.style.display='block';}
+    var emoji=clone.querySelector('.avatar-emoji');
+    if(emoji)emoji.style.display='none';
+  }
+  if(resumeDataURL){
+    var scripts=clone.querySelectorAll('script');
+    var last=scripts[scripts.length-1];
+    if(last)last.textContent=last.textContent.replace('let resumeDataURL=null','let resumeDataURL="'+resumeDataURL+'"');
+  }
+  var html='<!DOCTYPE html>\n'+clone.outerHTML;
+  var blob=new Blob([html],{type:'text/html'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='index.html';
+  a.click();URL.revokeObjectURL(a.href);
+  eToast('Downloaded! Upload to GitHub as index.html');
 }
 </script>
+
 
 
 </body></html>
